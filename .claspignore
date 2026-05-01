@@ -1,0 +1,15 @@
+# Abaikan semua file secara default
+**/**
+
+# PENGECUALIAN: Izinkan file berekstensi GAS di manapun di dalam rootDir
+!**/*.gs
+!**/*.html
+!appsscript.json
+
+# Pengabaian Mutlak
+.git/
+.vscode/
+node_modules/
+package.json
+package-lock.json
+*.code-workspace

@@ -821,12 +821,33 @@
       .withSuccessHandler((dataTrx) => {
         container.innerHTML = "";
 
-        // Kalkulasi Total Personal
-        let totalSaldo = 0;
-        dataTrx.forEach((trx) => (totalSaldo += parseFloat(trx.NOMINAL || 0)));
-        document.getElementById("mySaldoTotal").textContent = "Rp " + totalSaldo.toLocaleString("id-ID");
+        // 1. Ekstrak Data Unik untuk Opsi Dropdown (Otomatis dari Riwayat Warga)
+        const uniqueBulan = [...new Set(dataTrx.map((item) => item.BULAN_DIBAYAR))];
+        const uniquePetugas = [...new Set(dataTrx.map((item) => item.PETUGAS))];
 
-        // Kerangka Tabel Tanpa Paginasi (Riwayat personal biasanya tidak masif)
+        // 2. Toolbar & Filter Dropdown
+        const toolbar = document.createElement("div");
+        toolbar.className = "table-toolbar";
+
+        const searchInput = document.createElement("input");
+        searchInput.type = "text";
+        searchInput.className = "form-control toolbar-search";
+        searchInput.placeholder = "Cari ID Transaksi...";
+
+        const filterBulan = document.createElement("select");
+        filterBulan.className = "form-control toolbar-filter";
+        filterBulan.innerHTML = `<option value="ALL">Semua Bulan Tagihan</option>` + uniqueBulan.map((b) => `<option value="${b}">${b}</option>`).join("");
+
+        const filterPetugas = document.createElement("select");
+        filterPetugas.className = "form-control toolbar-filter";
+        filterPetugas.innerHTML = `<option value="ALL">Semua Petugas Penerima</option>` + uniquePetugas.map((p) => `<option value="${p}">${p}</option>`).join("");
+
+        toolbar.appendChild(searchInput);
+        toolbar.appendChild(filterBulan);
+        toolbar.appendChild(filterPetugas);
+        container.appendChild(toolbar);
+
+        // 3. Kerangka Tabel Tanpa Paginasi (Data personal biasanya ringkas)
         const wrap = document.createElement("div");
         wrap.className = "table-container";
         const scroll = document.createElement("div");
@@ -837,7 +858,7 @@
         const thead = document.createElement("thead");
         const trHead = document.createElement("tr");
         // Kolom Username dihilangkan karena ini milik pribadi
-        ["WAKTU BANYAR", "ID TRANSAKSI", "BULAN TAGIHAN", "DITERIMA OLEH", "NOMINAL"].forEach((t) => {
+        ["WAKTU BAYAR", "ID TRANSAKSI", "BULAN TAGIHAN", "DITERIMA OLEH", "NOMINAL"].forEach((t) => {
           const th = document.createElement("th");
           th.textContent = t;
           trHead.appendChild(th);
@@ -851,38 +872,74 @@
         wrap.appendChild(scroll);
         container.appendChild(wrap);
 
-        if (dataTrx.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: #64748b;">Belum ada riwayat pembayaran yang tercatat pada akun ini.</td></tr>';
-          return;
+        // 4. Mesin Render Baris & Kalkulator Kas Dinamis
+        function renderRows(data) {
+          tbody.innerHTML = "";
+
+          // Kalkulasi Total Personal Dinamis berdasarkan hasil filter
+          let totalSaldo = 0;
+          data.forEach((trx) => (totalSaldo += parseFloat(trx.NOMINAL || 0)));
+          const saldoElement = document.getElementById("mySaldoTotal");
+          if (saldoElement) saldoElement.textContent = "Rp " + totalSaldo.toLocaleString("id-ID");
+
+          if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: #64748b;">Belum ada riwayat pembayaran yang tercatat atau sesuai dengan filter Anda.</td></tr>';
+            return;
+          }
+
+          data.forEach((trx) => {
+            const tr = document.createElement("tr");
+            const tdTime = document.createElement("td");
+            tdTime.textContent = trx.TIMESTAMP;
+            tdTime.style.color = "#64748b";
+            tdTime.style.fontSize = "0.85rem";
+            tr.appendChild(tdTime);
+            const tdId = document.createElement("td");
+            tdId.textContent = trx.ID_TRANSAKSI;
+            tdId.style.fontWeight = "700";
+            tr.appendChild(tdId);
+            const tdBulan = document.createElement("td");
+            const badgeBulan = document.createElement("span");
+            badgeBulan.className = "badge badge-aktif";
+            badgeBulan.textContent = trx.BULAN_DIBAYAR;
+            tdBulan.appendChild(badgeBulan);
+            tr.appendChild(tdBulan);
+            const tdPetugas = document.createElement("td");
+            tdPetugas.textContent = trx.PETUGAS;
+            tr.appendChild(tdPetugas);
+            const tdNominal = document.createElement("td");
+            tdNominal.textContent = "Rp " + parseFloat(trx.NOMINAL).toLocaleString("id-ID");
+            tdNominal.style.fontWeight = "700";
+            tdNominal.style.color = "#2563eb";
+            tr.appendChild(tdNominal);
+            tbody.appendChild(tr);
+          });
         }
 
-        dataTrx.forEach((trx) => {
-          const tr = document.createElement("tr");
-          const tdTime = document.createElement("td");
-          tdTime.textContent = trx.TIMESTAMP;
-          tdTime.style.color = "#64748b";
-          tdTime.style.fontSize = "0.85rem";
-          tr.appendChild(tdTime);
-          const tdId = document.createElement("td");
-          tdId.textContent = trx.ID_TRANSAKSI;
-          tdId.style.fontWeight = "700";
-          tr.appendChild(tdId);
-          const tdBulan = document.createElement("td");
-          const badgeBulan = document.createElement("span");
-          badgeBulan.className = "badge badge-aktif";
-          badgeBulan.textContent = trx.BULAN_DIBAYAR;
-          tdBulan.appendChild(badgeBulan);
-          tr.appendChild(tdBulan);
-          const tdPetugas = document.createElement("td");
-          tdPetugas.textContent = trx.PETUGAS;
-          tr.appendChild(tdPetugas);
-          const tdNominal = document.createElement("td");
-          tdNominal.textContent = "Rp " + parseFloat(trx.NOMINAL).toLocaleString("id-ID");
-          tdNominal.style.fontWeight = "700";
-          tdNominal.style.color = "#2563eb";
-          tr.appendChild(tdNominal);
-          tbody.appendChild(tr);
-        });
+        // 5. Mesin Filter Multi-Lapisan
+        function applyFilters() {
+          const keyword = searchInput.value.toLowerCase();
+          const selBulan = filterBulan.value;
+          const selPetugas = filterPetugas.value;
+
+          const filteredData = dataTrx.filter((trx) => {
+            const textMatch = trx.ID_TRANSAKSI.toLowerCase().includes(keyword);
+            const bulanMatch = selBulan === "ALL" || trx.BULAN_DIBAYAR === selBulan;
+            const petugasMatch = selPetugas === "ALL" || trx.PETUGAS === selPetugas;
+            return textMatch && bulanMatch && petugasMatch;
+          });
+
+          // Render ulang (sekaligus meng-update total saldo di Kartu Biru)
+          renderRows(filteredData);
+        }
+
+        // 6. Pasang Pemicu Filter (Event Listener)
+        searchInput.addEventListener("input", applyFilters);
+        filterBulan.addEventListener("change", applyFilters);
+        filterPetugas.addEventListener("change", applyFilters);
+
+        // Eksekusi Render Pertama (Menampilkan Seluruh Data)
+        renderRows(dataTrx);
       })
       .withFailureHandler((err) => {
         container.innerHTML = `<div class="loading-text" style="color:red;">Error Akses Data: ${err.message}</div>`;

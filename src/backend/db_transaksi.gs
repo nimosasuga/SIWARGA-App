@@ -45,3 +45,47 @@ function getAllTransaksi() {
     return obj;
   });
 }
+
+/**
+ * [READ] Mengambil riwayat transaksi KHUSUS untuk satu warga (Self-Service)
+ * @param {string} username - Username dari sesi pengguna yang sedang login
+ */
+function getTransaksiByUser(username) {
+  const TRANSAKSI_ID = "10wCY4kQn2Zhm_9udQvCm_0JTv7nzUjzXJYI0SB3FlsM";
+  const db = SpreadsheetApp.openById(TRANSAKSI_ID);
+  const sheet = db.getSheetByName("LOG_IURAN");
+
+  if (!sheet) throw new Error("CRITICAL: Sheet LOG_IURAN tidak ditemukan di DB_TRANSAKSI.");
+
+  const rawData = sheet.getDataRange().getValues();
+  const headers = rawData[0];
+  const rows = rawData.slice(1);
+
+  const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+  let result = [];
+
+  rows.forEach((row) => {
+    // Index 2 adalah USERNAME pada tabel Log Iuran
+    if (row[2].toString().trim() === username.trim()) {
+      let obj = {};
+      headers.forEach((header, index) => {
+        let cellValue = row[index];
+        let headerName = header.toString().trim();
+
+        if (Object.prototype.toString.call(cellValue) === "[object Date]") {
+          if (headerName === "BULAN_DIBAYAR") obj[headerName] = `${bulanIndo[cellValue.getMonth()]} ${cellValue.getFullYear()}`;
+          else obj[headerName] = Utilities.formatDate(cellValue, "Asia/Jakarta", "yyyy-MM-dd HH:mm:ss");
+        } else {
+          obj[headerName] = cellValue;
+        }
+      });
+      result.push(obj);
+    }
+  });
+
+  // Urutkan data dari transaksi terbaru ke terlama
+  result.sort((a, b) => new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP));
+
+  return result;
+}

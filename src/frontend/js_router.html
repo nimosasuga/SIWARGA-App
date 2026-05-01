@@ -27,6 +27,9 @@
       case "keuangan":
         renderViewKeuangan(pageContainer);
         break;
+      case "iuran":
+        renderViewIuranSaya(pageContainer);
+        break; // ROUTER IURAN SAYA AKTIF
       default:
         renderViewPlaceholder(pageContainer, "Modul Sedang Dirakit", "Modul ini sedang dalam tahap pengembangan iterasi berikutnya.");
     }
@@ -763,5 +766,127 @@
     text.style.borderLeft = "4px solid #f59e0b";
     container.appendChild(title);
     container.appendChild(text);
+  }
+
+  /**
+   * ==========================================
+   * VIEW: IURAN SAYA (SELF-SERVICE WARGA)
+   * ==========================================
+   */
+  function renderViewIuranSaya(container) {
+    const headerDiv = document.createElement("div");
+    headerDiv.style.display = "flex";
+    headerDiv.style.justifyContent = "space-between";
+    headerDiv.style.alignItems = "center";
+    headerDiv.style.marginBottom = "1.5rem";
+
+    const title = document.createElement("h2");
+    title.textContent = "Riwayat Iuran Saya";
+    title.style.color = "#0f172a";
+
+    headerDiv.appendChild(title);
+    container.appendChild(headerDiv);
+
+    // Card Ringkasan Personal (Berwarna Biru Korporat)
+    const summaryContainer = document.createElement("div");
+    summaryContainer.style.display = "flex";
+    summaryContainer.style.gap = "20px";
+    summaryContainer.style.marginBottom = "20px";
+    summaryContainer.style.flexWrap = "wrap";
+
+    const myKasCard = document.createElement("div");
+    myKasCard.style.flex = "1";
+    myKasCard.style.minWidth = "250px";
+    myKasCard.style.background = "linear-gradient(135deg, #3b82f6, #1d4ed8)"; // Biru Premium
+    myKasCard.style.color = "white";
+    myKasCard.style.padding = "25px";
+    myKasCard.style.borderRadius = "12px";
+    myKasCard.style.boxShadow = "0 10px 15px -3px rgba(37, 99, 235, 0.3)";
+    myKasCard.innerHTML = `<h3 style="font-size:0.9rem; margin-bottom:10px; font-weight:600; opacity:0.9;">Total Iuran Anda Terbayar</h3><div id="mySaldoTotal" style="font-size:2rem; font-weight:800;">Menghitung...</div>`;
+
+    summaryContainer.appendChild(myKasCard);
+    container.appendChild(summaryContainer);
+
+    const tableContainer = document.createElement("div");
+    container.appendChild(tableContainer);
+
+    // Lempar username dari sesi keamanan UI_STATE ke Backend
+    loadIuranSayaTable(tableContainer, UI_STATE.user.username);
+  }
+
+  function loadIuranSayaTable(container, username) {
+    container.innerHTML = '<div class="loading-text">Menarik riwayat iuran personal Anda...</div>';
+
+    google.script.run
+      .withSuccessHandler((dataTrx) => {
+        container.innerHTML = "";
+
+        // Kalkulasi Total Personal
+        let totalSaldo = 0;
+        dataTrx.forEach((trx) => (totalSaldo += parseFloat(trx.NOMINAL || 0)));
+        document.getElementById("mySaldoTotal").textContent = "Rp " + totalSaldo.toLocaleString("id-ID");
+
+        // Kerangka Tabel Tanpa Paginasi (Riwayat personal biasanya tidak masif)
+        const wrap = document.createElement("div");
+        wrap.className = "table-container";
+        const scroll = document.createElement("div");
+        scroll.className = "table-wrapper";
+        const table = document.createElement("table");
+        table.className = "enterprise-table";
+
+        const thead = document.createElement("thead");
+        const trHead = document.createElement("tr");
+        // Kolom Username dihilangkan karena ini milik pribadi
+        ["WAKTU BANYAR", "ID TRANSAKSI", "BULAN TAGIHAN", "DITERIMA OLEH", "NOMINAL"].forEach((t) => {
+          const th = document.createElement("th");
+          th.textContent = t;
+          trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        table.appendChild(tbody);
+        scroll.appendChild(table);
+        wrap.appendChild(scroll);
+        container.appendChild(wrap);
+
+        if (dataTrx.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: #64748b;">Belum ada riwayat pembayaran yang tercatat pada akun ini.</td></tr>';
+          return;
+        }
+
+        dataTrx.forEach((trx) => {
+          const tr = document.createElement("tr");
+          const tdTime = document.createElement("td");
+          tdTime.textContent = trx.TIMESTAMP;
+          tdTime.style.color = "#64748b";
+          tdTime.style.fontSize = "0.85rem";
+          tr.appendChild(tdTime);
+          const tdId = document.createElement("td");
+          tdId.textContent = trx.ID_TRANSAKSI;
+          tdId.style.fontWeight = "700";
+          tr.appendChild(tdId);
+          const tdBulan = document.createElement("td");
+          const badgeBulan = document.createElement("span");
+          badgeBulan.className = "badge badge-aktif";
+          badgeBulan.textContent = trx.BULAN_DIBAYAR;
+          tdBulan.appendChild(badgeBulan);
+          tr.appendChild(tdBulan);
+          const tdPetugas = document.createElement("td");
+          tdPetugas.textContent = trx.PETUGAS;
+          tr.appendChild(tdPetugas);
+          const tdNominal = document.createElement("td");
+          tdNominal.textContent = "Rp " + parseFloat(trx.NOMINAL).toLocaleString("id-ID");
+          tdNominal.style.fontWeight = "700";
+          tdNominal.style.color = "#2563eb";
+          tr.appendChild(tdNominal);
+          tbody.appendChild(tr);
+        });
+      })
+      .withFailureHandler((err) => {
+        container.innerHTML = `<div class="loading-text" style="color:red;">Error Akses Data: ${err.message}</div>`;
+      })
+      .getTransaksiByUser(username);
   }
 </script>

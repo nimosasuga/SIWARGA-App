@@ -1,27 +1,24 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>S.I.W.A.R.G.A - Sistem Informasi Warga</title>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S.I.W.A.R.G.A - Sistem Informasi Warga</title>
+  
+  <!-- Injeksi CSS Global (Tag <style> sudah ada di dalam file ini) -->
+  <?!= include('frontend/css_global'); ?>
+</head>
+<body>
+  
+  <div id="app-root">
+    Sedang memuat S.I.W.A.R.G.A...
+  </div>
 
-    <!-- Injeksi CSS Global (Zero Latency) -->
-    <style>
-      <?!= include('frontend/css_global'); ?>
-    </style>
-  </head>
-  <body>
-    <!-- WADAH UTAMA: DOM Engine akan menggambar seluruh elemen UI (Sidebar, Tabel, Form) di dalam div ini -->
-    <div id="app-root">Sedang memuat S.I.W.A.R.G.A...</div>
+  <!-- Injeksi JS Engine (Tag <script> sudah ada di dalam file ini) -->
+  <?!= include('frontend/js_engine'); ?>
 
-    <!-- Injeksi JS Engine (Pure DOM Logic) -->
-    <script>
-      <?!= include('frontend/js_engine'); ?>
-    </script>
+  <!-- Injeksi JS Router (Tag <script> sudah ada di dalam file ini) -->
+  <?!= include('frontend/js_router'); ?>
 
-    <!-- Injeksi JS Router (Navigasi Antar Halaman) -->
-    <script>
-      <?!= include('frontend/js_router'); ?>
-    </script>
-  </body>
+</body>
 </html>

@@ -1,18 +1,265 @@
 <script>
-  /** * ========================================== * S.I.W.A.R.G.A - DOM ENGINE * Pure DOM Manipulation (NO innerHTML) * ========================================== */ // State Global UI const UI_STATE = { isSidebarOpen: false }; /** * Merakit
-  kerangka utama aplikasi (Sidebar, Navbar, Area Konten) */ function renderAppLayout() { const appRoot = document.getElementById('app-root'); appRoot.textContent = ''; // Bersihkan teks loading awal // 1. Buat Overlay (Background gelap saat
-  sidebar terbuka di Mobile) const overlay = document.createElement('div'); overlay.className = 'sidebar-overlay'; overlay.id = 'sidebarOverlay'; overlay.addEventListener('click', toggleSidebar); // Tutup sidebar jika overlay diklik // 2.
-  Buat Sidebar Container const sidebar = document.createElement('aside'); sidebar.className = 'sidebar'; sidebar.id = 'appSidebar'; // 2a. Header Sidebar (Logo/Judul) const sidebarHeader = document.createElement('div');
-  sidebarHeader.style.padding = '20px'; sidebarHeader.style.borderBottom = '1px solid var(--border-color)'; sidebarHeader.style.fontWeight = 'bold'; sidebarHeader.style.fontSize = '1.3rem'; sidebarHeader.style.color = 'var(--primary)';
-  sidebarHeader.textContent = 'S.I.W.A.R.G.A'; sidebar.appendChild(sidebarHeader); // 2b. Wadah Menu Dinamis (Kosongkan dulu, nanti diisi via RBAC) const menuContainer = document.createElement('nav'); menuContainer.id = 'menuContainer';
-  menuContainer.style.flex = '1'; menuContainer.style.padding = '10px'; menuContainer.style.overflowY = 'auto'; sidebar.appendChild(menuContainer); // 3. Buat Main Content Area const mainContent = document.createElement('main');
-  mainContent.className = 'main-content'; mainContent.id = 'mainContent'; // 3a. Navbar Atas (Header Area) const topNavbar = document.createElement('header'); topNavbar.style.height = 'var(--header-height)'; topNavbar.style.backgroundColor =
-  '#fff'; topNavbar.style.borderBottom = '1px solid var(--border-color)'; topNavbar.style.display = 'flex'; topNavbar.style.alignItems = 'center'; topNavbar.style.padding = '0 20px'; // Tombol Hamburger (Khusus Mobile) const menuBtn =
-  document.createElement('button'); menuBtn.innerHTML = '&#9776;'; // Karakter Unicode Hamburger menuBtn.style.background = 'none'; menuBtn.style.border = 'none'; menuBtn.style.fontSize = '1.5rem'; menuBtn.style.cursor = 'pointer';
-  menuBtn.style.color = 'var(--text-main)'; // Sembunyikan tombol di layar desktop (lebar > 768px) if (window.innerWidth > 768) { menuBtn.style.display = 'none'; } menuBtn.addEventListener('click', toggleSidebar);
-  topNavbar.appendChild(menuBtn); mainContent.appendChild(topNavbar); // 3b. Wadah Halaman Dinamis (Tempat tabel/form akan dirender) const pageContainer = document.createElement('div'); pageContainer.id = 'pageContainer';
-  pageContainer.style.padding = '20px'; pageContainer.textContent = 'Modul Login & Dashboard akan dimuat di sini...'; mainContent.appendChild(pageContainer); // 4. Injeksi semua ke Root (Menyusun DOM) appRoot.appendChild(overlay);
-  appRoot.appendChild(sidebar); appRoot.appendChild(mainContent); } /** * Logika buka/tutup Sidebar (Fluid Animation) */ function toggleSidebar() { const sidebar = document.getElementById('appSidebar'); const overlay =
-  document.getElementById('sidebarOverlay'); UI_STATE.isSidebarOpen = !UI_STATE.isSidebarOpen; if (UI_STATE.isSidebarOpen) { sidebar.classList.add('active'); overlay.classList.add('active'); } else { sidebar.classList.remove('active');
-  overlay.classList.remove('active'); } } // Booting DOM saat HTML selesai diload oleh Browser window.onload = () => { renderAppLayout(); };
+  /**
+   * ==========================================
+   * S.I.W.A.R.G.A - DOM ENGINE
+   * Pure DOM Manipulation (NO innerHTML)
+   * ==========================================
+   */
+
+  // State Global UI
+  const UI_STATE = {
+    isSidebarOpen: false,
+  };
+
+  /**
+   * Merakit kerangka utama aplikasi (Sidebar, Navbar, Area Konten)
+   */
+  function renderAppLayout() {
+    const appRoot = document.getElementById("app-root");
+
+    if (!appRoot) {
+      throw new Error("Fatal Error: Elemen #app-root tidak ditemukan.");
+    }
+
+    appRoot.textContent = ""; // Bersihkan teks loading awal
+
+    // 1. Buat Overlay (Background gelap saat sidebar terbuka di Mobile)
+    const overlay = document.createElement("div");
+    overlay.className = "sidebar-overlay";
+    overlay.id = "sidebarOverlay";
+    overlay.addEventListener("click", toggleSidebar); // Tutup sidebar jika overlay diklik
+
+    // 2. Buat Sidebar Container
+    const sidebar = document.createElement("aside");
+    sidebar.className = "sidebar";
+    sidebar.id = "appSidebar";
+
+    // 2a. Header Sidebar (Logo/Judul)
+    const sidebarHeader = document.createElement("div");
+    sidebarHeader.style.padding = "20px";
+    sidebarHeader.style.borderBottom = "1px solid var(--border-color)";
+    sidebarHeader.style.fontWeight = "bold";
+    sidebarHeader.style.fontSize = "1.3rem";
+    sidebarHeader.style.color = "var(--primary)";
+    sidebarHeader.textContent = "SIWARGA APP";
+    sidebar.appendChild(sidebarHeader);
+
+    // 2b. Wadah Menu Dinamis (Kosongkan dulu, nanti diisi via RBAC)
+    const menuContainer = document.createElement("nav");
+    menuContainer.id = "menuContainer";
+    menuContainer.style.flex = "1";
+    menuContainer.style.padding = "10px";
+    menuContainer.style.overflowY = "auto";
+    sidebar.appendChild(menuContainer);
+
+    // 3. Buat Main Content Area
+    const mainContent = document.createElement("main");
+    mainContent.className = "main-content";
+    mainContent.id = "mainContent";
+
+    // 3a. Navbar Atas (Header Area)
+    const topNavbar = document.createElement("header");
+    topNavbar.style.height = "var(--header-height)";
+    topNavbar.style.backgroundColor = "#fff";
+    topNavbar.style.borderBottom = "1px solid var(--border-color)";
+    topNavbar.style.display = "flex";
+    topNavbar.style.alignItems = "center";
+    topNavbar.style.padding = "0 20px";
+
+    // Tombol Hamburger (Khusus Mobile)
+    const menuBtn = document.createElement("button");
+    menuBtn.textContent = "☰"; // Menggunakan textContent yang lebih aman dari innerHTML
+    menuBtn.style.background = "none";
+    menuBtn.style.border = "none";
+    menuBtn.style.fontSize = "1.5rem";
+    menuBtn.style.cursor = "pointer";
+    menuBtn.style.color = "var(--text-main)";
+
+    // Sembunyikan tombol di layar desktop (lebar > 768px)
+    if (window.innerWidth > 768) {
+      menuBtn.style.display = "none";
+    }
+
+    // Listener Resize: Otomatis memunculkan/menyembunyikan tombol saat layar ditarik
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768) {
+        menuBtn.style.display = "none";
+        if (UI_STATE.isSidebarOpen) toggleSidebar();
+      } else {
+        menuBtn.style.display = "block";
+      }
+    });
+
+    menuBtn.addEventListener("click", toggleSidebar);
+
+    topNavbar.appendChild(menuBtn);
+    mainContent.appendChild(topNavbar);
+
+    // 3b. Wadah Halaman Dinamis (Tempat tabel/form akan dirender)
+    const pageContainer = document.createElement("div");
+    pageContainer.id = "pageContainer";
+    pageContainer.style.padding = "20px";
+    pageContainer.textContent = "Modul Login & Dashboard akan dimuat di sini...";
+    mainContent.appendChild(pageContainer);
+
+    // 4. Injeksi semua ke Root (Menyusun DOM)
+    appRoot.appendChild(overlay);
+    appRoot.appendChild(sidebar);
+    appRoot.appendChild(mainContent);
+  }
+
+  /**
+   * Logika buka/tutup Sidebar (Fluid Animation)
+   */
+  function toggleSidebar() {
+    const sidebar = document.getElementById("appSidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+
+    if (!sidebar || !overlay) return;
+
+    UI_STATE.isSidebarOpen = !UI_STATE.isSidebarOpen;
+
+    if (UI_STATE.isSidebarOpen) {
+      sidebar.classList.add("active");
+      overlay.classList.add("active");
+    } else {
+      sidebar.classList.remove("active");
+      overlay.classList.remove("active");
+    }
+  }
+
+  /**
+   * Merender halaman Login Split-Screen Ultra Premium
+   */
+  function renderLoginScreen() {
+    const appRoot = document.getElementById("app-root");
+    appRoot.textContent = "";
+
+    // 1. Wrapper Utama
+    const wrapper = document.createElement("div");
+    wrapper.className = "login-wrapper";
+
+    // 2. Banner Kiri (Akan hilang di Mobile)
+    const banner = document.createElement("div");
+    banner.className = "login-banner";
+
+    const bannerTitle = document.createElement("h1");
+    bannerTitle.className = "banner-title";
+    bannerTitle.textContent = "SIWARGA APP";
+
+    const bannerSubtitle = document.createElement("p");
+    bannerSubtitle.className = "banner-subtitle";
+    bannerSubtitle.textContent = "Sistem Manajemen Enterprise Terpadu. Dibangun dengan arsitektur Zero-Trust RBAC untuk memastikan keamanan dan efisiensi operasional organisasi tingkat tinggi.";
+
+    banner.appendChild(bannerTitle);
+    banner.appendChild(bannerSubtitle);
+
+    // 3. Panel Kanan (Form Login)
+    const panel = document.createElement("div");
+    panel.className = "login-panel";
+
+    const title = document.createElement("h2");
+    title.className = "login-title";
+    title.textContent = "Portal Akses";
+
+    const subtitle = document.createElement("p");
+    subtitle.className = "login-subtitle";
+    subtitle.textContent = "Silakan masukkan kredensial SIWARGA APP Anda.";
+
+    // Group NIK
+    const nikGroup = document.createElement("div");
+    nikGroup.className = "input-group";
+    const nikLabel = document.createElement("label");
+    nikLabel.className = "login-label";
+    nikLabel.textContent = "Nomor Induk Kependudukan (NIK)";
+    const nikInput = document.createElement("input");
+    nikInput.type = "text";
+    nikInput.id = "inputNik";
+    nikInput.className = "login-input";
+    nikInput.placeholder = "16 Digit NIK Anda";
+
+    nikGroup.appendChild(nikLabel);
+    nikGroup.appendChild(nikInput);
+
+    // Group No HP
+    const hpGroup = document.createElement("div");
+    hpGroup.className = "input-group";
+    const hpLabel = document.createElement("label");
+    hpLabel.className = "login-label";
+    hpLabel.textContent = "Nomor WhatsApp / Sandi";
+    const hpInput = document.createElement("input");
+    hpInput.type = "password";
+    hpInput.id = "inputHp";
+    hpInput.className = "login-input";
+    hpInput.placeholder = "08xxxxxxxxxx";
+
+    hpGroup.appendChild(hpLabel);
+    hpGroup.appendChild(hpInput);
+
+    // Pesan Error
+    const errorMsg = document.createElement("p");
+    errorMsg.style.color = "#ef4444";
+    errorMsg.style.fontSize = "0.875rem";
+    errorMsg.style.fontWeight = "500";
+    errorMsg.style.marginTop = "1rem";
+    errorMsg.style.minHeight = "20px"; // placeholder tinggi error
+
+    // Tombol Submit
+    const loginBtn = document.createElement("button");
+    loginBtn.className = "login-btn";
+    loginBtn.textContent = "Otorisasi Akses";
+
+    // Event Listener (Sama seperti sebelumnya)
+    loginBtn.addEventListener("click", () => {
+      const nik = document.getElementById("inputNik").value.trim();
+      const hp = document.getElementById("inputHp").value.trim();
+
+      if (!nik || !hp) {
+        errorMsg.textContent = "Kredensial tidak lengkap. Harap isi NIK dan No. WhatsApp.";
+        return;
+      }
+
+      loginBtn.textContent = "Memverifikasi Protokol...";
+      loginBtn.disabled = true;
+      errorMsg.textContent = "";
+
+      google.script.run
+        .withSuccessHandler((userData) => {
+          UI_STATE.user = userData;
+          renderAppLayout();
+        })
+        .withFailureHandler((error) => {
+          errorMsg.textContent = error.message;
+          loginBtn.textContent = "Otorisasi Akses";
+          loginBtn.disabled = false;
+        })
+        .authenticateUser(nik, hp);
+    });
+
+    // Susun Panel Kanan
+    panel.appendChild(title);
+    panel.appendChild(subtitle);
+    panel.appendChild(nikGroup);
+    panel.appendChild(hpGroup);
+    panel.appendChild(loginBtn);
+    panel.appendChild(errorMsg);
+
+    // Gabungkan ke Wrapper
+    wrapper.appendChild(banner);
+    wrapper.appendChild(panel);
+    appRoot.appendChild(wrapper);
+  }
+
+  // 5. BOOTING ENGINE MENGGUNAKAN TRY-CATCH
+  // UBAH BAGIAN INI:
+  try {
+    // Ganti renderAppLayout() menjadi renderLoginScreen()
+    renderLoginScreen();
+  } catch (error) {
+    console.error("DOM Engine Crash:", error);
+    const root = document.getElementById("app-root");
+    if (root) {
+      root.textContent = "CRASH DETECTED: " + error.message;
+    }
+  }
 </script>

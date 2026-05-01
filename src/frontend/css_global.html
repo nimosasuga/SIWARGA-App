@@ -263,4 +263,221 @@ horizontal tidak sengaja */
       font-size: 1.5rem;
     }
   }
+
+  /* 8. PREMIUM DASHBOARD & COLLAPSIBLE SIDEBAR UI */
+  :root {
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 84px;
+  }
+
+  .sidebar {
+    width: var(--sidebar-width);
+    background-color: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    transition:
+      width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 50;
+    overflow: hidden; /* Mencegah teks meluber saat ditarik */
+  }
+
+  /* State ketika Sidebar di-Minimize (Desktop) */
+  .sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+  }
+
+  .sidebar-header {
+    height: 70px;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    white-space: nowrap;
+  }
+
+  .sidebar-title-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .sidebar-title-icon {
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+  }
+
+  .sidebar-title-text {
+    font-weight: 800;
+    font-size: 1.25rem;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    transition:
+      opacity 0.2s ease,
+      width 0.2s ease;
+  }
+
+  /* Sembunyikan teks judul saat collapse */
+  .sidebar.collapsed .sidebar-title-text {
+    opacity: 0;
+    width: 0;
+    display: none;
+  }
+
+  .btn-collapse {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-collapse:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+  }
+
+  /* Sembunyikan tombol collapse di HP (Karena HP pakai sistem overlay) */
+  @media (max-width: 768px) {
+    .btn-collapse {
+      display: none;
+    }
+  }
+
+  .menu-container {
+    flex: 1;
+    padding: 1.5rem 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 0.85rem 1.5rem;
+    margin: 0.25rem 1rem;
+    border-radius: 8px;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .menu-item:hover {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+
+  /* Gaya Aktif yang Mewah (Pita Biru di Kiri) */
+  .menu-item.active {
+    background-color: #eff6ff;
+    color: #2563eb;
+  }
+  .menu-item.active::before {
+    content: "";
+    position: absolute;
+    left: -1rem;
+    top: 10%;
+    height: 80%;
+    width: 4px;
+    background-color: #2563eb;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .menu-item-icon {
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .menu-item-text {
+    transition: opacity 0.2s ease;
+  }
+
+  /* Menyesuaikan menu saat Sidebar Collapsed */
+  .sidebar.collapsed .menu-item {
+    padding: 0.85rem 0;
+    justify-content: center;
+  }
+  .sidebar.collapsed .menu-item-icon {
+    margin-right: 0;
+  }
+  .sidebar.collapsed .menu-item-text {
+    opacity: 0;
+    width: 0;
+    display: none;
+  }
+  .sidebar.collapsed .menu-item.active::before {
+    left: 0; /* Geser pita biru aktif agar tetap terlihat saat diringkas */
+  }
+
+  .menu-logout {
+    margin-top: auto;
+    color: #ef4444;
+  }
+
+  .menu-logout:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+  }
+
+  /* Navbar Profile UI */
+  .topbar-profile {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .profile-info {
+    text-align: right;
+    line-height: 1.2;
+  }
+  .profile-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
+  }
+  .profile-role {
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+  }
+
+  .profile-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+  }
+
+  @media (max-width: 600px) {
+    .profile-info {
+      display: none;
+    }
+  }
 </style>

@@ -1,0 +1,118 @@
+<script>
+  /**
+   * ==========================================
+   * S.I.W.A.R.G.A - ZERO-LATENCY ROUTER ENGINE
+   * Mengatur perpindahan modul tanpa loading layar
+   * ==========================================
+   */
+
+  /**
+   * Fungsi Utama Navigasi
+   * @param {string} pageId - ID dari menu yang diklik
+   */
+  function switchPage(pageId) {
+    const pageContainer = document.getElementById("pageContainer");
+    if (!pageContainer) return;
+
+    // 1. Bersihkan layar konten sebelumnya
+    pageContainer.textContent = "";
+
+    // 2. Reset dan Update visual "Pita Biru" (Active State) di Sidebar
+    document.querySelectorAll(".menu-item").forEach((item) => {
+      item.classList.remove("active");
+    });
+
+    const activeMenu = document.getElementById("menu-" + pageId);
+    if (activeMenu) {
+      activeMenu.classList.add("active");
+    }
+
+    // 3. Render Modul (View Controller) berdasarkan pageId
+    switch (pageId) {
+      case "dashboard":
+        renderViewDashboard(pageContainer);
+        break;
+      case "warga":
+        renderViewPlaceholder(pageContainer, "Manajemen Data Warga", "Modul pendaftaran dan validasi warga baru akan dirakit di sini.");
+        break;
+      case "data":
+        renderViewPlaceholder(pageContainer, "Buku Induk Penduduk", "Tabel data penduduk secara keseluruhan akan ditampilkan di sini.");
+        break;
+      case "keuangan":
+        renderViewPlaceholder(pageContainer, "Kas & Keuangan RT", "Modul pencatatan pemasukan dan pengeluaran kas lingkungan.");
+        break;
+      case "iuran":
+        renderViewPlaceholder(pageContainer, "Iuran Saya", "Histori pembayaran iuran bulanan warga yang bersangkutan.");
+        break;
+      case "sistem":
+        renderViewPlaceholder(pageContainer, "Pengaturan Sistem", "Konfigurasi variabel aplikasi, RBAC, dan maintenance database.");
+        break;
+      default:
+        renderViewPlaceholder(pageContainer, "Modul Tidak Ditemukan", "Terjadi kesalahan sistem router.");
+    }
+  }
+
+  /**
+   * VIEW: Modul Dashboard Utama
+   */
+  function renderViewDashboard(container) {
+    const title = document.createElement("h2");
+    title.textContent = "Dashboard Utama";
+    title.style.color = "#0f172a";
+    title.style.marginBottom = "20px";
+
+    const cardRow = document.createElement("div");
+    cardRow.style.display = "flex";
+    cardRow.style.gap = "20px";
+    cardRow.style.flexWrap = "wrap";
+
+    // Card Dummy 1
+    const card1 = document.createElement("div");
+    card1.style.flex = "1";
+    card1.style.minWidth = "250px";
+    card1.style.background = "#fff";
+    card1.style.padding = "25px";
+    card1.style.borderRadius = "12px";
+    card1.style.border = "1px solid #e2e8f0";
+    card1.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.05)";
+    card1.innerHTML = `<h3 style="color:#64748b; font-size:0.9rem; margin-bottom:10px;">Total Warga Aktif</h3><div style="font-size:2rem; font-weight:800; color:#2563eb;">1,240</div>`;
+
+    // Card Dummy 2
+    const card2 = document.createElement("div");
+    card2.style.flex = "1";
+    card2.style.minWidth = "250px";
+    card2.style.background = "#fff";
+    card2.style.padding = "25px";
+    card2.style.borderRadius = "12px";
+    card2.style.border = "1px solid #e2e8f0";
+    card2.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.05)";
+    card2.innerHTML = `<h3 style="color:#64748b; font-size:0.9rem; margin-bottom:10px;">Status Kas Bulan Ini</h3><div style="font-size:2rem; font-weight:800; color:#10b981;">Aman</div>`;
+
+    cardRow.appendChild(card1);
+    cardRow.appendChild(card2);
+
+    container.appendChild(title);
+    container.appendChild(cardRow);
+  }
+
+  /**
+   * VIEW: Placeholder untuk modul yang belum dirakit
+   */
+  function renderViewPlaceholder(container, titleText, descText) {
+    const title = document.createElement("h2");
+    title.textContent = titleText;
+    title.style.color = "#0f172a";
+    title.style.marginBottom = "10px";
+
+    const text = document.createElement("p");
+    text.textContent = descText + " (Status: Dalam Antrean Perakitan DOM)";
+    text.style.color = "#64748b";
+    text.style.padding = "20px";
+    text.style.background = "#f8fafc";
+    text.style.borderLeft = "4px solid #f59e0b";
+    text.style.borderRadius = "0 8px 8px 0";
+
+    container.appendChild(title);
+    container.appendChild(text);
+  }
+</script>

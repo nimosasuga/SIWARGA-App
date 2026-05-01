@@ -12,75 +12,219 @@
   };
 
   /**
-   * Merakit kerangka utama aplikasi (Sidebar, Navbar, Area Konten)
+   * PABRIK IKON VEKTOR PREMIUM (Murni DOM, Zero-Latency, Tanpa Library)
+   */
+  function createSvgIcon(name) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "20");
+    svg.setAttribute("height", "20");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+
+    let paths = [];
+    switch (name) {
+      case "dashboard": // Ikon Grid Modern
+        paths = ["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"];
+        break;
+      case "warga": // Ikon Users
+        paths = ["M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"];
+        break;
+      case "data": // Ikon Dokumen Data
+        paths = ["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M16 13H8", "M16 17H8", "M10 9H8"];
+        break;
+      case "keuangan": // Ikon Koper / Kas
+        paths = ["M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z", "M16 7V5h-8v2"];
+        break;
+      case "iuran": // Ikon Kartu Kredit
+        paths = ["M1 4h22v16H1z", "M1 10h22"];
+        break;
+      case "sistem": // Ikon Pengaturan / Gear
+        paths = [
+          "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+          "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z",
+        ];
+        break;
+      case "logout": // Ikon Log Out
+        paths = ["M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", "M16 17l5-5-5-5", "M21 12H9"];
+        break;
+      case "chevron-left": // Toggle Collapse Kiri
+        paths = ["M15 18l-6-6 6-6"];
+        break;
+      case "chevron-right": // Toggle Expand Kanan
+        paths = ["M9 18l6-6-6-6"];
+        break;
+      case "logo": // Mini Gedung Corporate Logo
+        paths = ["M3 21h18", "M5 21V7l8-4v18", "M19 21V11l-6-3", "M9 9v.01", "M9 13v.01", "M9 17v.01"];
+        break;
+      case "menu-burger": // Hamburger Menu
+        paths = ["M3 12h18", "M3 6h18", "M3 18h18"];
+        break;
+    }
+
+    paths.forEach((d) => {
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("d", d);
+      svg.appendChild(path);
+    });
+    return svg;
+  }
+
+  /**
+   * Merakit kerangka utama aplikasi (Sidebar Vector, Collapse State, Navbar RBAC)
    */
   function renderAppLayout() {
     const appRoot = document.getElementById("app-root");
+    if (!appRoot) throw new Error("Fatal Error: Elemen #app-root tidak ditemukan.");
 
-    if (!appRoot) {
-      throw new Error("Fatal Error: Elemen #app-root tidak ditemukan.");
+    if (!UI_STATE.user) {
+      renderLoginScreen();
+      return;
     }
 
-    appRoot.textContent = ""; // Bersihkan teks loading awal
+    if (UI_STATE.isSidebarCollapsed === undefined) UI_STATE.isSidebarCollapsed = false;
 
-    // 1. Buat Overlay (Background gelap saat sidebar terbuka di Mobile)
+    appRoot.textContent = "";
+
     const overlay = document.createElement("div");
     overlay.className = "sidebar-overlay";
     overlay.id = "sidebarOverlay";
-    overlay.addEventListener("click", toggleSidebar); // Tutup sidebar jika overlay diklik
+    overlay.addEventListener("click", toggleSidebar);
 
-    // 2. Buat Sidebar Container
     const sidebar = document.createElement("aside");
     sidebar.className = "sidebar";
     sidebar.id = "appSidebar";
+    if (UI_STATE.isSidebarCollapsed) sidebar.classList.add("collapsed");
 
-    // 2a. Header Sidebar (Logo/Judul)
     const sidebarHeader = document.createElement("div");
-    sidebarHeader.style.padding = "20px";
-    sidebarHeader.style.borderBottom = "1px solid var(--border-color)";
-    sidebarHeader.style.fontWeight = "bold";
-    sidebarHeader.style.fontSize = "1.3rem";
-    sidebarHeader.style.color = "var(--primary)";
-    sidebarHeader.textContent = "SIWARGA APP";
+    sidebarHeader.className = "sidebar-header";
+
+    const titleContainer = document.createElement("div");
+    titleContainer.className = "sidebar-title-container";
+
+    const titleIcon = document.createElement("div");
+    titleIcon.className = "sidebar-title-icon";
+    titleIcon.appendChild(createSvgIcon("logo"));
+
+    const titleText = document.createElement("div");
+    titleText.className = "sidebar-title-text";
+    titleText.textContent = "SIWARGA";
+
+    titleContainer.appendChild(titleIcon);
+    titleContainer.appendChild(titleText);
+
+    const collapseBtn = document.createElement("button");
+    collapseBtn.className = "btn-collapse";
+    collapseBtn.appendChild(createSvgIcon(UI_STATE.isSidebarCollapsed ? "chevron-right" : "chevron-left"));
+
+    collapseBtn.addEventListener("click", () => {
+      UI_STATE.isSidebarCollapsed = !UI_STATE.isSidebarCollapsed;
+      if (UI_STATE.isSidebarCollapsed) {
+        sidebar.classList.add("collapsed");
+        collapseBtn.innerHTML = "";
+        collapseBtn.appendChild(createSvgIcon("chevron-right"));
+      } else {
+        sidebar.classList.remove("collapsed");
+        collapseBtn.innerHTML = "";
+        collapseBtn.appendChild(createSvgIcon("chevron-left"));
+      }
+    });
+
+    sidebarHeader.appendChild(titleContainer);
+    sidebarHeader.appendChild(collapseBtn);
     sidebar.appendChild(sidebarHeader);
 
-    // 2b. Wadah Menu Dinamis (Kosongkan dulu, nanti diisi via RBAC)
     const menuContainer = document.createElement("nav");
-    menuContainer.id = "menuContainer";
-    menuContainer.style.flex = "1";
-    menuContainer.style.padding = "10px";
-    menuContainer.style.overflowY = "auto";
+    menuContainer.className = "menu-container";
+
+    const menuConfig = [
+      { id: "dashboard", title: "Dashboard Utama", icon: "dashboard", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS", "WARGA"] },
+      { id: "warga", title: "Manajemen Warga", icon: "warga", roles: ["SUPER_ADMIN", "KETUA_RT"] },
+      { id: "data", title: "Data Penduduk", icon: "data", roles: ["PENGURUS"] },
+      { id: "keuangan", title: "Kas & Keuangan", icon: "keuangan", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS"] },
+      { id: "iuran", title: "Iuran Saya", icon: "iuran", roles: ["WARGA"] },
+      { id: "sistem", title: "Pengaturan Sistem", icon: "sistem", roles: ["SUPER_ADMIN"] },
+    ];
+
+    const userRole = UI_STATE.user.role;
+
+    menuConfig.forEach((item) => {
+      if (item.roles.includes(userRole)) {
+        const menuItem = document.createElement("div");
+        menuItem.className = "menu-item";
+
+        // INJEKSI ID UNTUK ROUTER
+        menuItem.id = "menu-" + item.id;
+
+        if (item.id === "dashboard") menuItem.classList.add("active");
+
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "menu-item-icon";
+        iconSpan.appendChild(createSvgIcon(item.icon));
+
+        const textSpan = document.createElement("span");
+        textSpan.className = "menu-item-text";
+        textSpan.textContent = item.title;
+
+        menuItem.appendChild(iconSpan);
+        menuItem.appendChild(textSpan);
+
+        // TRIGGER ROUTER SAAT MENU DIKLIK
+        menuItem.addEventListener("click", () => {
+          switchPage(item.id);
+          // Autoclose sidebar jika dibuka di Mobile (layar < 768px)
+          if (window.innerWidth <= 768 && UI_STATE.isSidebarOpen) {
+            toggleSidebar();
+          }
+        });
+
+        menuContainer.appendChild(menuItem);
+      }
+    });
+
+    const logoutBtn = document.createElement("div");
+    logoutBtn.className = "menu-item menu-logout";
+    const logoutIcon = document.createElement("span");
+    logoutIcon.className = "menu-item-icon";
+    logoutIcon.appendChild(createSvgIcon("logout"));
+    const logoutText = document.createElement("span");
+    logoutText.className = "menu-item-text";
+    logoutText.textContent = "Keluar Sistem";
+    logoutBtn.appendChild(logoutIcon);
+    logoutBtn.appendChild(logoutText);
+
+    logoutBtn.addEventListener("click", () => {
+      UI_STATE.user = null;
+      renderLoginScreen();
+    });
+
+    menuContainer.appendChild(logoutBtn);
     sidebar.appendChild(menuContainer);
 
-    // 3. Buat Main Content Area
     const mainContent = document.createElement("main");
     mainContent.className = "main-content";
     mainContent.id = "mainContent";
 
-    // 3a. Navbar Atas (Header Area)
     const topNavbar = document.createElement("header");
     topNavbar.style.height = "var(--header-height)";
     topNavbar.style.backgroundColor = "#fff";
-    topNavbar.style.borderBottom = "1px solid var(--border-color)";
+    topNavbar.style.borderBottom = "1px solid #e2e8f0";
     topNavbar.style.display = "flex";
     topNavbar.style.alignItems = "center";
     topNavbar.style.padding = "0 20px";
 
-    // Tombol Hamburger (Khusus Mobile)
     const menuBtn = document.createElement("button");
-    menuBtn.textContent = "☰"; // Menggunakan textContent yang lebih aman dari innerHTML
+    menuBtn.appendChild(createSvgIcon("menu-burger"));
     menuBtn.style.background = "none";
     menuBtn.style.border = "none";
-    menuBtn.style.fontSize = "1.5rem";
     menuBtn.style.cursor = "pointer";
-    menuBtn.style.color = "var(--text-main)";
+    menuBtn.style.color = "#0f172a";
+    menuBtn.style.display = window.innerWidth > 768 ? "none" : "block";
 
-    // Sembunyikan tombol di layar desktop (lebar > 768px)
-    if (window.innerWidth > 768) {
-      menuBtn.style.display = "none";
-    }
-
-    // Listener Resize: Otomatis memunculkan/menyembunyikan tombol saat layar ditarik
     window.addEventListener("resize", () => {
       if (window.innerWidth > 768) {
         menuBtn.style.display = "none";
@@ -91,21 +235,42 @@
     });
 
     menuBtn.addEventListener("click", toggleSidebar);
-
     topNavbar.appendChild(menuBtn);
+
+    const profileContainer = document.createElement("div");
+    profileContainer.className = "topbar-profile";
+
+    const profileInfo = document.createElement("div");
+    profileInfo.className = "profile-info";
+    const profileName = document.createElement("div");
+    profileName.className = "profile-name";
+    profileName.textContent = UI_STATE.user.nama;
+    const profileRole = document.createElement("div");
+    profileRole.className = "profile-role";
+    profileRole.textContent = UI_STATE.user.jabatan + " - " + UI_STATE.user.blokRumah;
+    profileInfo.appendChild(profileName);
+    profileInfo.appendChild(profileRole);
+
+    const profileAvatar = document.createElement("div");
+    profileAvatar.className = "profile-avatar";
+    profileAvatar.textContent = UI_STATE.user.nama.charAt(0).toUpperCase();
+
+    profileContainer.appendChild(profileInfo);
+    profileContainer.appendChild(profileAvatar);
+    topNavbar.appendChild(profileContainer);
     mainContent.appendChild(topNavbar);
 
-    // 3b. Wadah Halaman Dinamis (Tempat tabel/form akan dirender)
     const pageContainer = document.createElement("div");
     pageContainer.id = "pageContainer";
-    pageContainer.style.padding = "20px";
-    pageContainer.textContent = "Modul Login & Dashboard akan dimuat di sini...";
-    mainContent.appendChild(pageContainer);
+    pageContainer.style.padding = "30px";
 
-    // 4. Injeksi semua ke Root (Menyusun DOM)
+    mainContent.appendChild(pageContainer);
     appRoot.appendChild(overlay);
     appRoot.appendChild(sidebar);
     appRoot.appendChild(mainContent);
+
+    // RENDER MODUL DASHBOARD SEBAGAI HALAMAN AWAL (AUTO-BOOT)
+    switchPage("dashboard");
   }
 
   /**

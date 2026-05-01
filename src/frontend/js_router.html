@@ -6,18 +6,12 @@
    * ==========================================
    */
 
-  /**
-   * Fungsi Utama Navigasi
-   * @param {string} pageId - ID dari menu yang diklik
-   */
   function switchPage(pageId) {
     const pageContainer = document.getElementById("pageContainer");
     if (!pageContainer) return;
 
-    // 1. Bersihkan layar konten sebelumnya
     pageContainer.textContent = "";
 
-    // 2. Reset dan Update visual "Pita Biru" (Active State) di Sidebar
     document.querySelectorAll(".menu-item").forEach((item) => {
       item.classList.remove("active");
     });
@@ -27,16 +21,16 @@
       activeMenu.classList.add("active");
     }
 
-    // 3. Render Modul (View Controller) berdasarkan pageId
+    // ROUTER CONTROLLER
     switch (pageId) {
       case "dashboard":
         renderViewDashboard(pageContainer);
         break;
       case "warga":
-        renderViewPlaceholder(pageContainer, "Manajemen Data Warga", "Modul pendaftaran dan validasi warga baru akan dirakit di sini.");
+        renderViewPlaceholder(pageContainer, "Manajemen Warga", "Modul input dan edit warga akan dirakit di sini.");
         break;
       case "data":
-        renderViewPlaceholder(pageContainer, "Buku Induk Penduduk", "Tabel data penduduk secara keseluruhan akan ditampilkan di sini.");
+        renderViewDataPenduduk(pageContainer); // ARAHKAN KE FUNGSI BARU!
         break;
       case "keuangan":
         renderViewPlaceholder(pageContainer, "Kas & Keuangan RT", "Modul pencatatan pemasukan dan pengeluaran kas lingkungan.");
@@ -45,7 +39,7 @@
         renderViewPlaceholder(pageContainer, "Iuran Saya", "Histori pembayaran iuran bulanan warga yang bersangkutan.");
         break;
       case "sistem":
-        renderViewPlaceholder(pageContainer, "Pengaturan Sistem", "Konfigurasi variabel aplikasi, RBAC, dan maintenance database.");
+        renderViewPlaceholder(pageContainer, "Pengaturan Sistem", "Konfigurasi variabel aplikasi dan maintenance database.");
         break;
       default:
         renderViewPlaceholder(pageContainer, "Modul Tidak Ditemukan", "Terjadi kesalahan sistem router.");
@@ -66,7 +60,6 @@
     cardRow.style.gap = "20px";
     cardRow.style.flexWrap = "wrap";
 
-    // Card Dummy 1
     const card1 = document.createElement("div");
     card1.style.flex = "1";
     card1.style.minWidth = "250px";
@@ -75,28 +68,131 @@
     card1.style.borderRadius = "12px";
     card1.style.border = "1px solid #e2e8f0";
     card1.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.05)";
-    card1.innerHTML = `<h3 style="color:#64748b; font-size:0.9rem; margin-bottom:10px;">Total Warga Aktif</h3><div style="font-size:2rem; font-weight:800; color:#2563eb;">1,240</div>`;
-
-    // Card Dummy 2
-    const card2 = document.createElement("div");
-    card2.style.flex = "1";
-    card2.style.minWidth = "250px";
-    card2.style.background = "#fff";
-    card2.style.padding = "25px";
-    card2.style.borderRadius = "12px";
-    card2.style.border = "1px solid #e2e8f0";
-    card2.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.05)";
-    card2.innerHTML = `<h3 style="color:#64748b; font-size:0.9rem; margin-bottom:10px;">Status Kas Bulan Ini</h3><div style="font-size:2rem; font-weight:800; color:#10b981;">Aman</div>`;
+    card1.innerHTML = `<h3 style="color:#64748b; font-size:0.9rem; margin-bottom:10px;">Status Sistem</h3><div style="font-size:1.5rem; font-weight:800; color:#10b981;">Online & Terenkripsi</div>`;
 
     cardRow.appendChild(card1);
-    cardRow.appendChild(card2);
-
     container.appendChild(title);
     container.appendChild(cardRow);
   }
 
   /**
-   * VIEW: Placeholder untuk modul yang belum dirakit
+   * VIEW: Data Penduduk (Tabel Dinamis)
+   */
+  function renderViewDataPenduduk(container) {
+    // 1. Header Halaman
+    const headerDiv = document.createElement("div");
+    headerDiv.style.display = "flex";
+    headerDiv.style.justifyContent = "space-between";
+    headerDiv.style.alignItems = "center";
+    headerDiv.style.marginBottom = "1rem";
+
+    const title = document.createElement("h2");
+    title.textContent = "Buku Induk Penduduk";
+    title.style.color = "#0f172a";
+
+    headerDiv.appendChild(title);
+    container.appendChild(headerDiv);
+
+    // 2. Indikator Loading
+    const loadingText = document.createElement("div");
+    loadingText.className = "loading-text";
+    loadingText.textContent = "Menyinkronkan data dengan SIWARGA_DB_MASTER...";
+    container.appendChild(loadingText);
+
+    // 3. Tarik Data dari Backend (Zero-Latency Rendering)
+    google.script.run
+      .withSuccessHandler((dataWarga) => {
+        // Hapus teks loading
+        if (container.contains(loadingText)) container.removeChild(loadingText);
+
+        // Buat Wadah Tabel
+        const tableContainer = document.createElement("div");
+        tableContainer.className = "table-container";
+
+        const tableWrapper = document.createElement("div");
+        tableWrapper.className = "table-wrapper";
+
+        const table = document.createElement("table");
+        table.className = "enterprise-table";
+
+        // --- RAKIT HEADER TABEL (THEAD) ---
+        const thead = document.createElement("thead");
+        const trHead = document.createElement("tr");
+        const kolom = ["NAMA LENGKAP", "USERNAME", "BLOK RUMAH", "JABATAN / ROLE", "STATUS"];
+
+        kolom.forEach((teks) => {
+          const th = document.createElement("th");
+          th.textContent = teks;
+          trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        // --- RAKIT ISI TABEL (TBODY) ---
+        const tbody = document.createElement("tbody");
+
+        dataWarga.forEach((warga) => {
+          const tr = document.createElement("tr");
+
+          // Kolom 1: Nama
+          const tdNama = document.createElement("td");
+          tdNama.textContent = warga.NAMA;
+          tdNama.style.fontWeight = "700";
+          tr.appendChild(tdNama);
+
+          // Kolom 2: Username
+          const tdUser = document.createElement("td");
+          tdUser.textContent = warga.USERNAME;
+          tdUser.style.color = "#64748b";
+          tr.appendChild(tdUser);
+
+          // Kolom 3: Blok Rumah
+          const tdBlok = document.createElement("td");
+          tdBlok.textContent = warga.BLOK_RUMAH;
+          tr.appendChild(tdBlok);
+
+          // Kolom 4: Role Badge
+          const tdRole = document.createElement("td");
+          const badgeRole = document.createElement("span");
+          badgeRole.className = "badge";
+          badgeRole.textContent = warga.ROLE;
+
+          // Warna dinamis sesuai Role
+          if (warga.ROLE === "SUPER_ADMIN" || warga.ROLE === "KETUA_RT") badgeRole.classList.add("badge-admin");
+          else if (warga.ROLE === "PENGURUS" || warga.ROLE === "KORLAP_GANG") badgeRole.classList.add("badge-pengurus");
+          else badgeRole.classList.add("badge-warga");
+
+          tdRole.appendChild(badgeRole);
+          tr.appendChild(tdRole);
+
+          // Kolom 5: Status Badge
+          const tdStatus = document.createElement("td");
+          const badgeStatus = document.createElement("span");
+          badgeStatus.className = "badge badge-aktif";
+          badgeStatus.textContent = warga.STATUS;
+
+          tdStatus.appendChild(badgeStatus);
+          tr.appendChild(tdStatus);
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        tableWrapper.appendChild(table);
+        tableContainer.appendChild(tableWrapper);
+
+        // Injeksi tabel utuh ke layar
+        container.appendChild(tableContainer);
+      })
+      .withFailureHandler((error) => {
+        loadingText.textContent = "Error Database: " + error.message;
+        loadingText.style.color = "red";
+      })
+      .getAllWarga();
+  }
+
+  /**
+   * VIEW: Placeholder
    */
   function renderViewPlaceholder(container, titleText, descText) {
     const title = document.createElement("h2");

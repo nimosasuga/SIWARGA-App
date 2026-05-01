@@ -141,12 +141,13 @@
     const menuContainer = document.createElement("nav");
     menuContainer.className = "menu-container";
 
+    // PENAMBAHAN HAK AKSES KORLAP_GANG
     const menuConfig = [
-      { id: "dashboard", title: "Dashboard Utama", icon: "dashboard", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS", "WARGA"] },
-      { id: "warga", title: "Manajemen Warga", icon: "warga", roles: ["SUPER_ADMIN", "KETUA_RT"] },
-      { id: "data", title: "Data Penduduk", icon: "data", roles: ["PENGURUS"] },
+      { id: "dashboard", title: "Dashboard Utama", icon: "dashboard", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS", "KORLAP_GANG", "WARGA"] },
+      { id: "warga", title: "Manajemen Warga", icon: "warga", roles: ["SUPER_ADMIN", "KETUA_RT", "KORLAP_GANG"] },
+      { id: "data", title: "Data Penduduk", icon: "data", roles: ["SUPER_ADMIN", "PENGURUS"] },
       { id: "keuangan", title: "Kas & Keuangan", icon: "keuangan", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS"] },
-      { id: "iuran", title: "Iuran Saya", icon: "iuran", roles: ["WARGA"] },
+      { id: "iuran", title: "Iuran Saya", icon: "iuran", roles: ["KORLAP_GANG", "WARGA"] },
       { id: "sistem", title: "Pengaturan Sistem", icon: "sistem", roles: ["SUPER_ADMIN"] },
     ];
 
@@ -157,7 +158,6 @@
         const menuItem = document.createElement("div");
         menuItem.className = "menu-item";
 
-        // INJEKSI ID UNTUK ROUTER
         menuItem.id = "menu-" + item.id;
 
         if (item.id === "dashboard") menuItem.classList.add("active");
@@ -173,13 +173,9 @@
         menuItem.appendChild(iconSpan);
         menuItem.appendChild(textSpan);
 
-        // TRIGGER ROUTER SAAT MENU DIKLIK
         menuItem.addEventListener("click", () => {
           switchPage(item.id);
-          // Autoclose sidebar jika dibuka di Mobile (layar < 768px)
-          if (window.innerWidth <= 768 && UI_STATE.isSidebarOpen) {
-            toggleSidebar();
-          }
+          if (window.innerWidth <= 768 && UI_STATE.isSidebarOpen) toggleSidebar();
         });
 
         menuContainer.appendChild(menuItem);
@@ -269,7 +265,6 @@
     appRoot.appendChild(sidebar);
     appRoot.appendChild(mainContent);
 
-    // RENDER MODUL DASHBOARD SEBAGAI HALAMAN AWAL (AUTO-BOOT)
     switchPage("dashboard");
   }
 

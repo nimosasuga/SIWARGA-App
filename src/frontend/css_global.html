@@ -480,4 +480,93 @@ horizontal tidak sengaja */
       display: none;
     }
   }
+
+  /* 9. ENTERPRISE DATA TABLE UI */
+  .table-container {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    overflow: hidden; /* Agar lengkungan border radius terlihat */
+    margin-top: 1.5rem;
+  }
+
+  .table-wrapper {
+    width: 100%;
+    overflow-x: auto; /* Scroll menyamping jika layar sempit */
+  }
+
+  .enterprise-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .enterprise-table th {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .enterprise-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .enterprise-table tbody tr {
+    transition: background-color 0.2s ease;
+  }
+
+  .enterprise-table tbody tr:hover {
+    background-color: #f8fafc;
+  }
+
+  /* Status Badges */
+  .badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px; /* Pill shape */
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-aktif {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+
+  .badge-admin {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+
+  .badge-pengurus {
+    background-color: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .badge-warga {
+    background-color: #f1f5f9;
+    color: #475569;
+  }
+
+  .loading-text {
+    padding: 2rem;
+    text-align: center;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 1rem;
+  }
 </style>

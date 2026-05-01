@@ -1,66 +1,125 @@
 /**
- * ONE-TIME SETUP SCRIPT
- * Jalankan fungsi ini HANYA SEKALI untuk membuat infrastruktur database.
+ * ==========================================
+ * S.I.W.A.R.G.A - UTILITIES & DATABASE SEEDER
+ * ARSITEKTUR: SPLIT-DATABASE (MICROSERVICES)
+ * ==========================================
  */
-function setupDatabaseOtomatis() {
-  // 1. Membuat Folder Utama di Root Drive
-  var folderName = "SIWARGA_DATABASE_PROD";
-  var folder = DriveApp.createFolder(folderName);
 
-  // 2. Membuat DB_MASTER (Terisolasi)
-  var dbMaster = SpreadsheetApp.create("SIWARGA_DB_MASTER");
-  DriveApp.getFileById(dbMaster.getId()).moveTo(folder);
-
-  var sheetWarga = dbMaster.getSheets()[0];
-  sheetWarga.setName("DATA_WARGA");
-  // Kolom dasar RBAC & Data Warga
-  sheetWarga.appendRow(["NIK", "NAMA", "NO_HP", "BLOK_RUMAH", "JABATAN", "ROLE", "STATUS"]);
-
-  // 3. Membuat DB_TRANSAKSI (Terisolasi)
-  var dbTransaksi = SpreadsheetApp.create("SIWARGA_DB_TRANSAKSI");
-  DriveApp.getFileById(dbTransaksi.getId()).moveTo(folder);
-
-  var sheetIuran = dbTransaksi.getSheets()[0];
-  sheetIuran.setName("LOG_IURAN");
-  // Kolom transaksi untuk Reverse Loop
-  sheetIuran.appendRow(["ID_TRANSAKSI", "TIMESTAMP", "NIK", "NOMINAL", "BULAN_DIBAYAR", "PETUGAS"]);
-
-  // 4. Output ID untuk di-binding ke sistem
-  Logger.log("=== SETUP SELESAI ===");
-  Logger.log("Folder ID: " + folder.getId());
-  Logger.log("DB_MASTER ID: " + dbMaster.getId());
-  Logger.log("DB_TRANSAKSI ID: " + dbTransaksi.getId());
+/**
+ * MENGAKSES DATABASE MASTER
+ */
+function getSheetWarga() {
+  // ISOLASI LOKAL: Bebas dari tabrakan variabel antar file
+  const MASTER_ID = "1Ko4hiHR39_vCHYXKub6FIvjcEDhHZc1UGpoOqD0AUns";
+  const db = SpreadsheetApp.openById(MASTER_ID);
+  let sheet = db.getSheetByName("DATA_WARGA");
+  if (!sheet) sheet = db.insertSheet("DATA_WARGA");
+  return sheet;
 }
 
 /**
- * ONE-TIME EXECUTION: Injeksi Data Warga Awal & Header (Username & Password)
+ * MENGAKSES DATABASE TRANSAKSI
  */
-function injectDataAwal() {
+function getSheetTransaksi() {
+  // ISOLASI LOKAL: Bebas dari tabrakan variabel antar file
+  const TRANSAKSI_ID = "10wCY4kQn2Zhm_9udQvCm_0JTv7nzUjzXJYI0SB3FlsM";
+  const db = SpreadsheetApp.openById(TRANSAKSI_ID);
+  let sheet = db.getSheetByName("LOG_IURAN");
+  if (!sheet) sheet = db.insertSheet("LOG_IURAN");
+  return sheet;
+}
+
+/**
+ * SEEDER 1: Injeksi 100 Warga ke DB MASTER
+ */
+function seedDatabaseWarga() {
   const sheet = getSheetWarga();
 
-  // 1. Tulis ulang Header Kolom secara absolut (Baris 1)
   const headerData = [["USERNAME", "NAMA", "PASSWORD", "BLOK_RUMAH", "JABATAN", "ROLE", "STATUS"]];
-  sheet.getRange(1, 1, 1, headerData[0].length).setValues(headerData);
+  sheet.getRange(1, 1, 1, headerData[0].length).setValues(headerData).setFontWeight("bold").setBackground("#0f172a").setFontColor("#ffffff").setHorizontalAlignment("center");
 
-  // 2. Beri gaya "Enterprise" pada Header (Bold, Background Navy, Teks Putih)
-  sheet.getRange(1, 1, 1, headerData[0].length).setFontWeight("bold").setBackground("#0f172a").setFontColor("#ffffff").setHorizontalAlignment("center");
-
-  // 3. Bersihkan data lama jika ada (Mulai dari Baris 2 ke bawah)
   const lastRow = sheet.getLastRow();
-  if (lastRow > 1) {
-    sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+  if (lastRow > 1) sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+
+  let dataToInject = [];
+
+  // Eksekutif & Pengurus
+  dataToInject.push(["admin", "Bapak Super Admin", "admin123", "Pusat", "Developer", "SUPER_ADMIN", "AKTIF"]);
+  dataToInject.push(["rt01", "Bapak Hermawan (Ketua RT)", "rt123", "Blok A/1", "Ketua RT", "KETUA_RT", "AKTIF"]);
+  dataToInject.push(["bendahara", "Ibu Siti (Bendahara)", "uang123", "Blok B/2", "Bendahara", "PENGURUS", "AKTIF"]);
+
+  // Koorlap Gang (Gang A sampai E)
+  const korlapGang = ["A", "B", "C", "D", "E"];
+  korlapGang.forEach((gang) => {
+    dataToInject.push([`korlap_${gang.toLowerCase()}`, `Bapak Korlap Gang ${gang}`, "korlap123", `Blok ${gang}/1`, `Korlap Gang ${gang}`, "KORLAP_GANG", "AKTIF"]);
+  });
+
+  // Generate 100 Warga Realistis
+  const namaDepan = ["Budi", "Agus", "Ahmad", "Sari", "Dewi", "Wahyu", "Eko", "Putri", "Rudi", "Nina", "Hendra", "Maya", "Dedi", "Rina", "Doni"];
+  const namaBelakang = ["Saputra", "Setiawan", "Hidayat", "Lestari", "Kusuma", "Pratama", "Wijaya", "Nugroho", "Santoso", "Sari", "Gunawan", "Rahayu"];
+
+  for (let i = 1; i <= 100; i++) {
+    let randDepan = namaDepan[Math.floor(Math.random() * namaDepan.length)];
+    let randBelakang = namaBelakang[Math.floor(Math.random() * namaBelakang.length)];
+    let namaLengkap = `${randDepan} ${randBelakang}`;
+
+    let gangTarget = korlapGang[Math.floor(Math.random() * korlapGang.length)];
+    let nomorRumah = Math.floor(Math.random() * 50) + 2;
+
+    let username = `warga${i.toString().padStart(3, "0")}`;
+
+    dataToInject.push([username, namaLengkap, "warga123", `Blok ${gangTarget}/${nomorRumah}`, "Warga", "WARGA", "AKTIF"]);
   }
 
-  // 4. Data Dummy Warga (Hierarki RBAC Mutlak)
-  const dataDummy = [
-    ["admin", "Bapak Super Admin", "admin123", "Blok A/1", "Developer", "SUPER_ADMIN", "AKTIF"],
-    ["rt01", "Bapak Ketua RT", "rt123", "Blok A/2", "Ketua RT", "KETUA_RT", "AKTIF"],
-    ["bendahara", "Ibu Bendahara", "uang123", "Blok B/1", "Bendahara", "PENGURUS", "AKTIF"],
-    ["warga01", "Bapak Warga Biasa", "warga123", "Blok C/5", "Warga", "WARGA", "AKTIF"],
-  ];
+  sheet.getRange(2, 1, dataToInject.length, dataToInject[0].length).setValues(dataToInject);
+  Logger.log(`[SEEDER MASTER] Berhasil menginjeksi ${dataToInject.length} baris data ke SIWARGA_DB_MASTER.`);
+}
 
-  // 5. Suntikkan langsung secara massal untuk kecepatan O(1)
-  sheet.getRange(2, 1, dataDummy.length, dataDummy[0].length).setValues(dataDummy);
+/**
+ * SEEDER 2: Injeksi Riwayat Iuran ke DB TRANSAKSI
+ */
+function seedRiwayatIuran() {
+  const sheetLog = getSheetTransaksi();
+  const sheetWarga = getSheetWarga();
 
-  Logger.log("Suntik Data Berhasil! Header Kolom telah diperbarui dan diformat.");
+  // Format Header Baru (Sesuai Permintaan)
+  const header = [["ID_TRANSAKSI", "TIMESTAMP", "USERNAME", "NOMINAL", "BULAN_DIBAYAR", "PETUGAS"]];
+  sheetLog.getRange(1, 1, 1, header[0].length).setValues(header).setFontWeight("bold").setBackground("#059669").setFontColor("#ffffff").setHorizontalAlignment("center");
+
+  const lastRow = sheetLog.getLastRow();
+  if (lastRow > 1) sheetLog.getRange(2, 1, lastRow - 1, sheetLog.getLastColumn()).clearContent();
+
+  // Ambil data Warga dari DB MASTER untuk merelasikan Username
+  const dataWarga = sheetWarga.getDataRange().getValues();
+  let listWarga = dataWarga.filter((row) => row[5] === "WARGA");
+
+  let dataTransaksi = [];
+  let currentDate = new Date();
+
+  const daftarBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const petugasPenagih = ["bendahara", "korlap_a", "korlap_b", "korlap_c"];
+
+  // Generate Transaksi untuk setiap Warga selama 6 bulan terakhir
+  listWarga.forEach((warga) => {
+    let username = warga[0];
+
+    for (let i = 0; i < 6; i++) {
+      if (Math.random() > 0.15) {
+        let tglBayar = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, Math.floor(Math.random() * 28) + 1);
+
+        let idTrx = `TRX-${tglBayar.getTime().toString().slice(-6)}-${username}`;
+        let timestamp = Utilities.formatDate(tglBayar, "Asia/Jakarta", "yyyy-MM-dd HH:mm:ss");
+        let nominal = 50000;
+        let bulanDibayar = `${daftarBulan[tglBayar.getMonth()]} ${tglBayar.getFullYear()}`;
+        let petugas = petugasPenagih[Math.floor(Math.random() * petugasPenagih.length)];
+
+        dataTransaksi.push([idTrx, timestamp, username, nominal, bulanDibayar, petugas]);
+      }
+    }
+  });
+
+  dataTransaksi.sort((a, b) => new Date(a[1]) - new Date(b[1]));
+
+  sheetLog.getRange(2, 1, dataTransaksi.length, dataTransaksi[0].length).setValues(dataTransaksi);
+  Logger.log(`[SEEDER TRANSAKSI] Berhasil menginjeksi ${dataTransaksi.length} riwayat log iuran ke SIWARGA_DB_TRANSAKSI.`);
 }

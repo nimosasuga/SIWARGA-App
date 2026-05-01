@@ -33,17 +33,25 @@ function setupDatabaseOtomatis() {
 }
 
 /**
- * ONE-TIME EXECUTION: Injeksi Data Warga Awal (Username & Password)
+ * ONE-TIME EXECUTION: Injeksi Data Warga Awal & Header (Username & Password)
  */
 function injectDataAwal() {
   const sheet = getSheetWarga();
 
+  // 1. Tulis ulang Header Kolom secara absolut (Baris 1)
+  const headerData = [["USERNAME", "NAMA", "PASSWORD", "BLOK_RUMAH", "JABATAN", "ROLE", "STATUS"]];
+  sheet.getRange(1, 1, 1, headerData[0].length).setValues(headerData);
+
+  // 2. Beri gaya "Enterprise" pada Header (Bold, Background Navy, Teks Putih)
+  sheet.getRange(1, 1, 1, headerData[0].length).setFontWeight("bold").setBackground("#0f172a").setFontColor("#ffffff").setHorizontalAlignment("center");
+
+  // 3. Bersihkan data lama jika ada (Mulai dari Baris 2 ke bawah)
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
     sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
   }
 
-  // Perubahan Kolom: [USERNAME, NAMA, PASSWORD, BLOK_RUMAH, JABATAN, ROLE, STATUS]
+  // 4. Data Dummy Warga (Hierarki RBAC Mutlak)
   const dataDummy = [
     ["admin", "Bapak Super Admin", "admin123", "Blok A/1", "Developer", "SUPER_ADMIN", "AKTIF"],
     ["rt01", "Bapak Ketua RT", "rt123", "Blok A/2", "Ketua RT", "KETUA_RT", "AKTIF"],
@@ -51,6 +59,8 @@ function injectDataAwal() {
     ["warga01", "Bapak Warga Biasa", "warga123", "Blok C/5", "Warga", "WARGA", "AKTIF"],
   ];
 
+  // 5. Suntikkan langsung secara massal untuk kecepatan O(1)
   sheet.getRange(2, 1, dataDummy.length, dataDummy[0].length).setValues(dataDummy);
-  Logger.log("Suntik Data Berhasil! Format USERNAME dan PASSWORD diterapkan.");
+
+  Logger.log("Suntik Data Berhasil! Header Kolom telah diperbarui dan diformat.");
 }

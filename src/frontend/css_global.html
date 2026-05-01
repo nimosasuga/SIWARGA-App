@@ -95,44 +95,101 @@ horizontal tidak sengaja */
     }
   }
 
-  /* 7. CLEAN CORPORATE LOGIN UI */
+  /* 7. MODERN CORPORATE LOGIN UI WITH EFFECTS */
   .login-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     width: 100vw;
-    background-color: #f3f4f6; /* Abu-abu terang khas dashboard admin */
+    background-color: #f8fafc;
+    position: relative;
+    /* PERBAIKAN MOBILE: Izinkan scroll jika konten melebihi tinggi layar */
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* PERBAIKAN MOBILE: Padding agar panel tidak menabrak pinggir layar atas/bawah */
+    padding: 2rem 1rem;
   }
 
+  /* Partikel Korporat (Efek Visual Bergerak Halus) */
+  .corp-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 1;
+    opacity: 0.4;
+    animation: floatBlob 15s infinite ease-in-out alternate;
+  }
+  .blob-primary {
+    width: 450px;
+    height: 450px;
+    background-color: #3b82f6; /* Biru Profesional */
+    top: -100px;
+    left: -100px;
+  }
+  .blob-secondary {
+    width: 350px;
+    height: 350px;
+    background-color: #0ea5e9; /* Biru Langit */
+    bottom: -50px;
+    right: -50px;
+    animation-delay: -7s;
+  }
+
+  @keyframes floatBlob {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    100% {
+      transform: translate(40px, 60px) scale(1.1);
+    }
+  }
+
+  /* Kartu Login (Kaca Premium) */
   .login-panel {
-    background: #ffffff;
-    padding: 2.5rem 3rem;
-    border-radius: 12px;
+    position: relative;
+    z-index: 10; /* Berada di atas partikel */
+    background: rgba(255, 255, 255, 0.85); /* Sedikit tembus pandang */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 3rem 2.5rem;
+    border-radius: 16px;
     box-shadow:
-      0 10px 25px -5px rgba(0, 0, 0, 0.05),
-      0 8px 10px -6px rgba(0, 0, 0, 0.01);
+      0 20px 40px -10px rgba(0, 0, 0, 0.1),
+      0 0 15px rgba(0, 0, 0, 0.02);
     width: 100%;
-    max-width: 400px;
-    border: 1px solid #e5e7eb;
+    max-width: 420px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    margin: auto;
   }
 
-  .login-logo {
+  /* Identitas Visual */
+  .login-logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .login-logo-text {
     text-align: center;
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 800;
-    color: #111827;
-    margin-bottom: 0.25rem;
+    color: #0f172a;
     letter-spacing: -0.5px;
+    margin-bottom: 0.25rem;
   }
 
-  .login-subtitle {
+  .login-tagline {
     text-align: center;
-    font-size: 0.875rem;
-    color: #6b7280;
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.4;
+    font-weight: 500;
     margin-bottom: 2rem;
+    padding: 0 1rem;
   }
 
+  /* Form Input */
   .input-group {
     margin-bottom: 1.25rem;
   }
@@ -141,49 +198,52 @@ horizontal tidak sengaja */
     display: block;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #374151;
+    color: #334155;
     margin-bottom: 0.5rem;
   }
 
   .login-input {
     width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
     font-size: 1rem;
-    color: #111827;
-    transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
+    color: #0f172a;
+    background-color: #ffffff;
+    transition: all 0.3s ease;
   }
 
   .login-input:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
   }
 
   .login-btn {
     width: 100%;
-    padding: 0.75rem;
-    background-color: var(--primary);
+    padding: 0.85rem;
+    background-color: #0f172a; /* Biru Gelap / Navy */
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
     margin-top: 0.5rem;
   }
 
   .login-btn:hover {
-    background-color: var(--primary-hover);
+    background-color: #1e293b;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(15, 23, 42, 0.2);
   }
 
   .login-btn:disabled {
-    background-color: #9ca3af;
+    background-color: #94a3b8;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 
   .error-msg {
@@ -194,15 +254,13 @@ horizontal tidak sengaja */
     min-height: 20px;
   }
 
-  /* Responsif Mobile */
+  /* Penyesuaian Mobile Khusus */
   @media (max-width: 480px) {
-    .login-wrapper {
-      background-color: #ffffff;
-    }
     .login-panel {
       padding: 2rem 1.5rem;
-      box-shadow: none;
-      border: none;
+    }
+    .login-logo-text {
+      font-size: 1.5rem;
     }
   }
 </style>

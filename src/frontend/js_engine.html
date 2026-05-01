@@ -129,27 +129,75 @@
   }
 
   /**
-   * Merender UI Clean Corporate dengan Username & Password
+   * Merender UI Modern Corporate dengan Efek Visual Partikel dan Auto-Scroll Mobile
    */
   function renderLoginScreen() {
     const appRoot = document.getElementById("app-root");
     appRoot.textContent = "";
 
+    // Wrapper & Panel Utama
     const wrapper = document.createElement("div");
     wrapper.className = "login-wrapper";
+
+    // Injeksi Partikel/Blob Background
+    const blob1 = document.createElement("div");
+    blob1.className = "corp-blob blob-primary";
+    const blob2 = document.createElement("div");
+    blob2.className = "corp-blob blob-secondary";
+
+    wrapper.appendChild(blob1);
+    wrapper.appendChild(blob2);
 
     const panel = document.createElement("div");
     panel.className = "login-panel";
 
-    const logo = document.createElement("div");
-    logo.className = "login-logo";
-    logo.textContent = "SIWARGA APP";
+    // 1. Container Logo Vektor SVG
+    const logoContainer = document.createElement("div");
+    logoContainer.className = "login-logo-container";
 
-    const subtitle = document.createElement("div");
-    subtitle.className = "login-subtitle";
-    subtitle.textContent = "Silakan masuk ke akun Anda";
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "54");
+    svg.setAttribute("height", "54");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "#0f172a"); // Menyesuaikan warna tombol korporat
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
 
-    // Group Username
+    const path1 = document.createElementNS(svgNS, "path");
+    path1.setAttribute("d", "M3 21h18");
+    const path2 = document.createElementNS(svgNS, "path");
+    path2.setAttribute("d", "M5 21V7l8-4v18");
+    const path3 = document.createElementNS(svgNS, "path");
+    path3.setAttribute("d", "M19 21V11l-6-3");
+    const path4 = document.createElementNS(svgNS, "path");
+    path4.setAttribute("d", "M9 9v.01");
+    const path5 = document.createElementNS(svgNS, "path");
+    path5.setAttribute("d", "M9 13v.01");
+    const path6 = document.createElementNS(svgNS, "path");
+    path6.setAttribute("d", "M9 17v.01");
+
+    svg.appendChild(path1);
+    svg.appendChild(path2);
+    svg.appendChild(path3);
+    svg.appendChild(path4);
+    svg.appendChild(path5);
+    svg.appendChild(path6);
+    logoContainer.appendChild(svg);
+
+    // 2. Teks Judul
+    const logoText = document.createElement("div");
+    logoText.className = "login-logo-text";
+    logoText.textContent = "SIWARGA APP";
+
+    // 3. Tagline Khas Corporate
+    const tagline = document.createElement("div");
+    tagline.className = "login-tagline";
+    tagline.textContent = "Sistem Manajemen Terpadu Ekosistem Warga";
+
+    // 4. Group Username
     const userGroup = document.createElement("div");
     userGroup.className = "input-group";
     const userLabel = document.createElement("label");
@@ -164,7 +212,7 @@
     userGroup.appendChild(userLabel);
     userGroup.appendChild(userInput);
 
-    // Group Password
+    // 5. Group Password
     const passGroup = document.createElement("div");
     passGroup.className = "input-group";
     const passLabel = document.createElement("label");
@@ -179,13 +227,15 @@
     passGroup.appendChild(passLabel);
     passGroup.appendChild(passInput);
 
+    // 6. Area Error & Tombol Login
     const errorMsg = document.createElement("div");
     errorMsg.className = "error-msg";
 
     const loginBtn = document.createElement("button");
     loginBtn.className = "login-btn";
-    loginBtn.textContent = "Masuk";
+    loginBtn.textContent = "Masuk ke Sistem";
 
+    // 7. Logika Eksekusi Login
     loginBtn.addEventListener("click", () => {
       const username = document.getElementById("inputUsername").value.trim();
       const password = document.getElementById("inputPassword").value.trim();
@@ -206,15 +256,16 @@
         })
         .withFailureHandler((error) => {
           errorMsg.textContent = error.message;
-          loginBtn.textContent = "Masuk";
+          loginBtn.textContent = "Masuk ke Sistem";
           loginBtn.disabled = false;
         })
         .authenticateUser(username, password);
     });
 
-    // Susun Panel
-    panel.appendChild(logo);
-    panel.appendChild(subtitle);
+    // 8. Susun Panel & Eksekusi ke DOM
+    panel.appendChild(logoContainer);
+    panel.appendChild(logoText);
+    panel.appendChild(tagline);
     panel.appendChild(userGroup);
     panel.appendChild(passGroup);
     panel.appendChild(loginBtn);

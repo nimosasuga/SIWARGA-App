@@ -32,12 +32,88 @@
     }
   }
 
+  /**
+   * VIEW: Modul Dashboard Utama (Analitik Real-Time)
+   */
   function renderViewDashboard(container) {
+    // 1. Header & Welcome Banner
+    const headerDiv = document.createElement("div");
+    headerDiv.style.marginBottom = "20px";
+
     const title = document.createElement("h2");
-    title.textContent = "Dashboard Utama";
+    title.textContent = "Ringkasan Eksekutif";
     title.style.color = "#0f172a";
-    title.style.marginBottom = "20px";
-    container.appendChild(title);
+    title.style.marginBottom = "5px";
+
+    const subtitle = document.createElement("p");
+    subtitle.textContent = "Memuat analitik sistem terenkripsi...";
+    subtitle.style.color = "#64748b";
+    subtitle.id = "dash-subtitle";
+
+    headerDiv.appendChild(title);
+    headerDiv.appendChild(subtitle);
+    container.appendChild(headerDiv);
+
+    // 2. Wadah Grid Kartu
+    const gridContainer = document.createElement("div");
+    gridContainer.className = "dash-grid";
+    gridContainer.id = "dash-grid-container";
+
+    // Tampilkan loading skeleton/teks
+    gridContainer.innerHTML = '<div class="loading-text" style="grid-column: 1 / -1;">Menghitung metrik S.I.W.A.R.G.A dari Database Master & Transaksi...</div>';
+    container.appendChild(gridContainer);
+
+    // 3. Tarik Data Kalkulasi dari Backend
+    google.script.run
+      .withSuccessHandler((stats) => {
+        // Update Subtitle
+        document.getElementById("dash-subtitle").textContent = `Data mutakhir diperbarui secara Real-Time. Periode Aktif: ${stats.bulanIniStr}`;
+
+        // Bersihkan loading
+        gridContainer.innerHTML = "";
+
+        // HELPER: Pabrik Pembuat Kartu
+        function createCard(titleTxt, valueTxt, iconSvg, colorClass) {
+          const card = document.createElement("div");
+          card.className = "dash-card";
+
+          const iconWrap = document.createElement("div");
+          iconWrap.className = `dash-icon-wrap ${colorClass}`;
+          iconWrap.innerHTML = iconSvg; // Menggunakan SVG Murni
+
+          const infoWrap = document.createElement("div");
+          infoWrap.className = "dash-info";
+
+          const h3 = document.createElement("h3");
+          h3.textContent = titleTxt;
+
+          const p = document.createElement("p");
+          p.textContent = valueTxt;
+
+          infoWrap.appendChild(h3);
+          infoWrap.appendChild(p);
+          card.appendChild(iconWrap);
+          card.appendChild(infoWrap);
+
+          return card;
+        }
+
+        // Definisi Ikon Vektor
+        const svgUsers = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+        const svgActive = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+        const svgMoney = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>`;
+        const svgTrending = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>`;
+
+        // Rakit 4 Kartu Metrik
+        gridContainer.appendChild(createCard("Total Penghuni (Warga)", `${stats.totalWarga} KK`, svgUsers, "dash-icon-blue"));
+        gridContainer.appendChild(createCard("Warga Status Aktif", `${stats.wargaAktif} KK`, svgActive, "dash-icon-purple"));
+        gridContainer.appendChild(createCard("Total Kas Lingkungan", `Rp ${stats.totalKas.toLocaleString("id-ID")}`, svgMoney, "dash-icon-green"));
+        gridContainer.appendChild(createCard(`Pemasukan ${stats.bulanIniStr}`, `Rp ${stats.kasBulanIni.toLocaleString("id-ID")}`, svgTrending, "dash-icon-amber"));
+      })
+      .withFailureHandler((error) => {
+        gridContainer.innerHTML = `<div class="loading-text" style="color:red; grid-column: 1/-1;">Error Analytics: ${error.message}</div>`;
+      })
+      .getDashboardSummary();
   }
 
   /**

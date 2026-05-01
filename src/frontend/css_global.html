@@ -809,4 +809,73 @@ horizontal tidak sengaja */
     cursor: not-allowed;
   }
   /* --- END TAMBAHAN --- */
+
+  /* 12. ANALYTIC DASHBOARD CARDS */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .dash-card {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .dash-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .dash-icon-wrap {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 1.25rem;
+    font-size: 1.75rem;
+  }
+
+  .dash-icon-blue {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  .dash-icon-green {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .dash-icon-amber {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  .dash-icon-purple {
+    background: #f3e8ff;
+    color: #7e22ce;
+  }
+
+  .dash-info h3 {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0 0 0.25rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .dash-info p {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+  }
 </style>

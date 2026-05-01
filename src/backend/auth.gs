@@ -15,42 +15,35 @@ const ROLE_LEVEL = {
 };
 
 /**
- * Memverifikasi kredensial login (Menggunakan NAMA dan BLOK RUMAH)
+ * Memverifikasi kredensial login (Menggunakan USERNAME dan PASSWORD)
  */
-function authenticateUser(namaInput, blokInput) {
+function authenticateUser(usernameInput, passwordInput) {
   const sheet = getSheetWarga();
   const data = sheet.getDataRange().getValues();
-
-  // Normalisasi input dari pengguna (hapus spasi lebih & jadikan huruf kecil)
-  let inputN = namaInput.toString().trim().toLowerCase();
-  let inputB = blokInput.toString().trim().toLowerCase();
-
-  // Reverse Loop Strategy
+  
+  let inputU = usernameInput.toString().trim();
+  let inputP = passwordInput.toString().trim();
+  
   for (let i = data.length - 1; i > 0; i--) {
-    let rowNama = data[i][1].toString().trim().toLowerCase();
-    let rowBlok = data[i][3].toString().trim().toLowerCase();
-
-    // Validasi kredensial
-    if (rowNama === inputN && rowBlok === inputB) {
+    let rowUser = data[i][0].toString().trim(); // Kolom 1: Username
+    let rowPass = data[i][2].toString().trim(); // Kolom 3: Password
+    
+    if (rowUser === inputU && rowPass === inputP) {
       let status = data[i][6];
-      if (status !== "AKTIF") {
-        throw new Error("Akun ditangguhkan. Silakan hubungi Pengurus RT.");
-      }
-
+      if (status !== "AKTIF") throw new Error("Akun ditangguhkan. Hubungi Pengurus.");
+      
       let roleString = data[i][5];
-
       return {
-        nik: data[i][0],
-        nama: data[i][1], // Kembalikan nama dengan huruf besar/kecil aslinya
+        username: data[i][0],
+        nama: data[i][1],
         blokRumah: data[i][3],
         jabatan: data[i][4],
         role: roleString,
-        level: ROLE_LEVEL[roleString] || 0,
+        level: ROLE_LEVEL[roleString] || 0
       };
     }
   }
-
-  throw new Error("Akses Ditolak: Nama atau Nomor/Blok Rumah tidak cocok.");
+  throw new Error("Kredensial tidak valid. Username atau Password salah.");
 }
 
 /**

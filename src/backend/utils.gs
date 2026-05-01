@@ -33,28 +33,24 @@ function setupDatabaseOtomatis() {
 }
 
 /**
- * ONE-TIME EXECUTION: Injeksi Data Warga Awal (RBAC)
+ * ONE-TIME EXECUTION: Injeksi Data Warga Awal (Username & Password)
  */
 function injectDataAwal() {
   const sheet = getSheetWarga();
 
-  // Bersihkan data lama jika ada (Kecuali Header di baris 1)
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
     sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
   }
 
-  // Hierarki RBAC Mutlak
+  // Perubahan Kolom: [USERNAME, NAMA, PASSWORD, BLOK_RUMAH, JABATAN, ROLE, STATUS]
   const dataDummy = [
-    // ["NIK", "NAMA", "NO_HP", "BLOK_RUMAH", "JABATAN", "ROLE", "STATUS"]
-    ["'111111", "Bapak Super Admin", "'081111", "Blok A/1", "Developer", "SUPER_ADMIN", "AKTIF"],
-    ["'222222", "Bapak Ketua RT", "'082222", "Blok A/2", "Ketua RT", "KETUA_RT", "AKTIF"],
-    ["'333333", "Ibu Bendahara", "'083333", "Blok B/1", "Bendahara", "PENGURUS", "AKTIF"],
-    ["'444444", "Bapak Warga Biasa", "'084444", "Blok C/5", "Warga", "WARGA", "AKTIF"],
+    ["admin", "Bapak Super Admin", "admin123", "Blok A/1", "Developer", "SUPER_ADMIN", "AKTIF"],
+    ["rt01", "Bapak Ketua RT", "rt123", "Blok A/2", "Ketua RT", "KETUA_RT", "AKTIF"],
+    ["bendahara", "Ibu Bendahara", "uang123", "Blok B/1", "Bendahara", "PENGURUS", "AKTIF"],
+    ["warga01", "Bapak Warga Biasa", "warga123", "Blok C/5", "Warga", "WARGA", "AKTIF"],
   ];
 
-  // Suntikkan langsung secara massal untuk optimasi kecepatan O(1) request
   sheet.getRange(2, 1, dataDummy.length, dataDummy[0].length).setValues(dataDummy);
-
-  Logger.log("Suntik Data Berhasil! 4 Akun Hierarki telah dibuat di DB_MASTER.");
+  Logger.log("Suntik Data Berhasil! Format USERNAME dan PASSWORD diterapkan.");
 }

@@ -129,121 +129,73 @@
   }
 
   /**
-   * Merender UI Glassmorphism dengan Partikel dan Logo Animasi (NAMA & BLOK)
+   * Merender UI Clean Corporate dengan Username & Password
    */
   function renderLoginScreen() {
     const appRoot = document.getElementById("app-root");
     appRoot.textContent = "";
 
-    // 1. Wrapper Utama
     const wrapper = document.createElement("div");
     wrapper.className = "login-wrapper";
 
-    // 2. Efek Partikel Background
-    const blob1 = document.createElement("div");
-    blob1.className = "particle-blob blob-1";
-    const blob2 = document.createElement("div");
-    blob2.className = "particle-blob blob-2";
-    wrapper.appendChild(blob1);
-    wrapper.appendChild(blob2);
-
-    // 3. Panel Glassmorphism
     const panel = document.createElement("div");
     panel.className = "login-panel";
 
-    // 4. Logo SVG Premium (Murni DOM Engine - createElementNS)
-    const logoContainer = document.createElement("div");
-    logoContainer.className = "logo-container";
+    const logo = document.createElement("div");
+    logo.className = "login-logo";
+    logo.textContent = "SIWARGA APP";
 
-    const svgNS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(svgNS, "svg");
-    svg.setAttribute("viewBox", "0 0 24 24");
-
-    const defs = document.createElementNS(svgNS, "defs");
-    const grad = document.createElementNS(svgNS, "linearGradient");
-    grad.setAttribute("id", "logoGradient");
-    grad.setAttribute("x1", "0%");
-    grad.setAttribute("y1", "0%");
-    grad.setAttribute("x2", "100%");
-    grad.setAttribute("y2", "100%");
-
-    const stop1 = document.createElementNS(svgNS, "stop");
-    stop1.setAttribute("offset", "0%");
-    stop1.setAttribute("stop-color", "#60a5fa");
-    const stop2 = document.createElementNS(svgNS, "stop");
-    stop2.setAttribute("offset", "100%");
-    stop2.setAttribute("stop-color", "#c084fc");
-
-    grad.appendChild(stop1);
-    grad.appendChild(stop2);
-    defs.appendChild(grad);
-
-    // Icon Bentuk Geometris/Gedung Modern
-    const path = document.createElementNS(svgNS, "path");
-    path.setAttribute("d", "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5");
-    path.setAttribute("stroke", "url(#logoGradient)");
-    path.setAttribute("stroke-width", "2");
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("stroke-linejoin", "round");
-
-    svg.appendChild(defs);
-    svg.appendChild(path);
-    logoContainer.appendChild(svg);
-
-    // Teks Judul
-    const title = document.createElement("h2");
-    title.className = "login-title";
-    title.textContent = "SIWARGA APP";
-
-    const subtitle = document.createElement("p");
+    const subtitle = document.createElement("div");
     subtitle.className = "login-subtitle";
-    subtitle.textContent = "Autentikasi Terenkripsi Ekosistem Warga";
+    subtitle.textContent = "Silakan masuk ke akun Anda";
 
-    // Input NAMA LENGKAP
-    const namaLabel = document.createElement("label");
-    namaLabel.className = "login-label";
-    namaLabel.textContent = "NAMA LENGKAP";
-    const namaInput = document.createElement("input");
-    namaInput.type = "text";
-    namaInput.id = "inputNama";
-    namaInput.className = "login-input";
-    namaInput.placeholder = "Contoh: Bapak Super Admin";
+    // Group Username
+    const userGroup = document.createElement("div");
+    userGroup.className = "input-group";
+    const userLabel = document.createElement("label");
+    userLabel.className = "login-label";
+    userLabel.textContent = "Username";
+    const userInput = document.createElement("input");
+    userInput.type = "text";
+    userInput.id = "inputUsername";
+    userInput.className = "login-input";
+    userInput.placeholder = "Masukkan username";
 
-    // Input BLOK RUMAH
-    const blokLabel = document.createElement("label");
-    blokLabel.className = "login-label";
-    blokLabel.textContent = "NOMOR / BLOK RUMAH";
-    const blokInput = document.createElement("input");
-    blokInput.type = "text";
-    blokInput.id = "inputBlok";
-    blokInput.className = "login-input";
-    blokInput.placeholder = "Contoh: Blok A/1";
+    userGroup.appendChild(userLabel);
+    userGroup.appendChild(userInput);
 
-    // Pesan Error
-    const errorMsg = document.createElement("p");
-    errorMsg.style.color = "#f87171"; // Merah neon
-    errorMsg.style.fontSize = "0.85rem";
-    errorMsg.style.textAlign = "center";
-    errorMsg.style.marginTop = "1rem";
-    errorMsg.style.minHeight = "20px";
+    // Group Password
+    const passGroup = document.createElement("div");
+    passGroup.className = "input-group";
+    const passLabel = document.createElement("label");
+    passLabel.className = "login-label";
+    passLabel.textContent = "Password";
+    const passInput = document.createElement("input");
+    passInput.type = "password";
+    passInput.id = "inputPassword";
+    passInput.className = "login-input";
+    passInput.placeholder = "••••••••";
 
-    // Tombol Login
+    passGroup.appendChild(passLabel);
+    passGroup.appendChild(passInput);
+
+    const errorMsg = document.createElement("div");
+    errorMsg.className = "error-msg";
+
     const loginBtn = document.createElement("button");
     loginBtn.className = "login-btn";
-    loginBtn.textContent = "SINKRONISASI DATA";
+    loginBtn.textContent = "Masuk";
 
-    // Logika Eksekusi Login
     loginBtn.addEventListener("click", () => {
-      const nama = document.getElementById("inputNama").value;
-      const blok = document.getElementById("inputBlok").value;
+      const username = document.getElementById("inputUsername").value.trim();
+      const password = document.getElementById("inputPassword").value.trim();
 
-      if (!nama || !blok) {
-        errorMsg.textContent = "Kredensial wajib diisi secara lengkap.";
+      if (!username || !password) {
+        errorMsg.textContent = "Username dan password wajib diisi.";
         return;
       }
 
-      loginBtn.textContent = "MENGHUBUNGKAN...";
+      loginBtn.textContent = "Memverifikasi...";
       loginBtn.disabled = true;
       errorMsg.textContent = "";
 
@@ -254,24 +206,20 @@
         })
         .withFailureHandler((error) => {
           errorMsg.textContent = error.message;
-          loginBtn.textContent = "SINKRONISASI DATA";
+          loginBtn.textContent = "Masuk";
           loginBtn.disabled = false;
         })
-        .authenticateUser(nama, blok);
+        .authenticateUser(username, password);
     });
 
     // Susun Panel
-    panel.appendChild(logoContainer);
-    panel.appendChild(title);
+    panel.appendChild(logo);
     panel.appendChild(subtitle);
-    panel.appendChild(namaLabel);
-    panel.appendChild(namaInput);
-    panel.appendChild(blokLabel);
-    panel.appendChild(blokInput);
+    panel.appendChild(userGroup);
+    panel.appendChild(passGroup);
     panel.appendChild(loginBtn);
     panel.appendChild(errorMsg);
 
-    // Susun ke Root
     wrapper.appendChild(panel);
     appRoot.appendChild(wrapper);
   }

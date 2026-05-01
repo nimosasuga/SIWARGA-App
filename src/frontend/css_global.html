@@ -95,157 +95,114 @@ horizontal tidak sengaja */
     }
   }
 
-  /* 7. GLASSMORPHISM & PARTICLE UI (The Billion-Dollar Aesthetic) */
+  /* 7. CLEAN CORPORATE LOGIN UI */
   .login-wrapper {
-    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     width: 100vw;
-    overflow: hidden;
-    background: #0f172a; /* Deep Space Navy */
+    background-color: #f3f4f6; /* Abu-abu terang khas dashboard admin */
   }
 
-  /* Partikel Melayang (Pure CSS) */
-  .particle-blob {
-    position: absolute;
-    filter: blur(90px);
-    z-index: 1;
-    opacity: 0.5;
-    animation: floatParticle 12s infinite ease-in-out alternate;
-  }
-  .blob-1 {
-    width: 500px;
-    height: 500px;
-    background: #3b82f6; /* Blue Glow */
-    top: -150px;
-    left: -150px;
-  }
-  .blob-2 {
-    width: 400px;
-    height: 400px;
-    background: #8b5cf6; /* Purple Glow */
-    bottom: -100px;
-    right: -100px;
-    animation-delay: -6s;
-  }
-
-  @keyframes floatParticle {
-    0% {
-      transform: translateY(0) scale(1);
-    }
-    100% {
-      transform: translateY(50px) scale(1.1);
-    }
-  }
-
-  /* Glass Card */
   .login-panel {
-    position: relative;
-    z-index: 10;
-    width: 100%;
-    max-width: 460px;
-    padding: 3rem;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
+    background: #ffffff;
+    padding: 2.5rem 3rem;
+    border-radius: 12px;
     box-shadow:
-      0 30px 60px -15px rgba(0, 0, 0, 0.8),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    margin: 20px;
+      0 10px 25px -5px rgba(0, 0, 0, 0.05),
+      0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #e5e7eb;
   }
 
-  /* Logo Setup */
-  .logo-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1.5rem;
-  }
-  .logo-container svg {
-    width: 70px;
-    height: 70px;
-    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.5));
-  }
-
-  .login-title {
-    font-size: 2rem;
-    font-weight: 800;
+  .login-logo {
     text-align: center;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(to right, #60a5fa, #c084fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 0.5px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.5px;
   }
+
   .login-subtitle {
     text-align: center;
-    color: #94a3b8;
-    margin-bottom: 2.5rem;
-    font-size: 0.95rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 2rem;
+  }
+
+  .input-group {
+    margin-bottom: 1.25rem;
   }
 
   .login-label {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: #cbd5e1;
+    color: #374151;
     margin-bottom: 0.5rem;
-    letter-spacing: 0.5px;
   }
 
   .login-input {
     width: 100%;
-    padding: 1rem 1.25rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: white;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
     font-size: 1rem;
-    transition: all 0.3s ease;
-    margin-bottom: 1.5rem;
+    color: #111827;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
   }
+
   .login-input:focus {
     outline: none;
-    border-color: #60a5fa;
-    background: rgba(15, 23, 42, 0.9);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
-  }
-  .login-input::placeholder {
-    color: #475569;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
   }
 
   .login-btn {
     width: 100%;
-    padding: 1.1rem;
-    background: linear-gradient(135deg, #2563eb 0%, #6d28d9 100%);
+    padding: 0.75rem;
+    background-color: var(--primary);
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 1.05rem;
-    font-weight: 700;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.5);
-    letter-spacing: 1px;
-  }
-  .login-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.7);
-  }
-  .login-btn:active {
-    transform: translateY(0);
+    transition: background-color 0.2s;
+    margin-top: 0.5rem;
   }
 
-  /* Responsif Mobile Khusus Glassmorphism */
-  @media (max-width: 600px) {
-    .login-panel {
-      padding: 2.5rem 1.5rem;
+  .login-btn:hover {
+    background-color: var(--primary-hover);
+  }
+
+  .login-btn:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+
+  .error-msg {
+    color: #dc2626;
+    font-size: 0.875rem;
+    text-align: center;
+    margin-top: 1rem;
+    min-height: 20px;
+  }
+
+  /* Responsif Mobile */
+  @media (max-width: 480px) {
+    .login-wrapper {
+      background-color: #ffffff;
     }
-    .login-title {
-      font-size: 1.7rem;
+    .login-panel {
+      padding: 2rem 1.5rem;
+      box-shadow: none;
+      border: none;
     }
   }
 </style>

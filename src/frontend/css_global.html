@@ -95,153 +95,157 @@ horizontal tidak sengaja */
     }
   }
 
-  /* 7. PREMIUM LOGIN UI (Enterprise Standard) */
-/* 7. ULTRA-PREMIUM LOGIN UI (Split-Screen Enterprise) */
-.login-wrapper {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  background-color: #ffffff;
-}
-
-/* Panel Kiri (Banner Eksklusif) */
-.login-banner {
-  flex: 1;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 5rem 10%;
-  color: white;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Efek Watermark/Cahaya Halus di Banner */
-.login-banner::after {
-  content: '';
-  position: absolute;
-  width: 800px;
-  height: 800px;
-  background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 70%);
-  border-radius: 50%;
-  top: -200px;
-  right: -200px;
-  pointer-events: none;
-}
-
-.banner-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  letter-spacing: -1px;
-  margin-bottom: 1rem;
-  z-index: 2;
-}
-
-.banner-subtitle {
-  font-size: 1.25rem;
-  color: #94a3b8;
-  line-height: 1.6;
-  max-width: 450px;
-  z-index: 2;
-}
-
-/* Panel Kanan (Form Eksekusi) */
-.login-panel {
-  width: 100%;
-  max-width: 500px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 4rem;
-  background: #ffffff;
-  box-shadow: -15px 0 30px rgba(0, 0, 0, 0.03);
-  z-index: 10;
-}
-
-.login-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.5px;
-}
-
-.login-subtitle {
-  color: #64748b;
-  font-size: 1rem;
-  margin-bottom: 2.5rem;
-}
-
-.input-group {
-  margin-bottom: 1.5rem;
-}
-
-.login-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.5rem;
-}
-
-.login-input {
-  width: 100%;
-  padding: 1rem 1.25rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px; /* Lebih tegas, tidak terlalu membulat */
-  font-size: 1rem;
-  color: #0f172a;
-  transition: all 0.3s ease;
-  background-color: #f8fafc;
-}
-
-.login-input:focus {
-  outline: none;
-  border-color: #0f172a;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.1);
-}
-
-.login-btn {
-  width: 100%;
-  padding: 1.1rem;
-  background-color: #0f172a;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 1rem;
-  letter-spacing: 0.5px;
-}
-
-.login-btn:hover {
-  background-color: #1e293b;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.3);
-}
-
-.login-btn:disabled {
-  background-color: #94a3b8;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Responsif: Menghilangkan Banner Kiri di Layar HP */
-@media (max-width: 900px) {
-  .login-banner {
-    display: none;
+  /* 7. GLASSMORPHISM & PARTICLE UI (The Billion-Dollar Aesthetic) */
+  .login-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: #0f172a; /* Deep Space Navy */
   }
+
+  /* Partikel Melayang (Pure CSS) */
+  .particle-blob {
+    position: absolute;
+    filter: blur(90px);
+    z-index: 1;
+    opacity: 0.5;
+    animation: floatParticle 12s infinite ease-in-out alternate;
+  }
+  .blob-1 {
+    width: 500px;
+    height: 500px;
+    background: #3b82f6; /* Blue Glow */
+    top: -150px;
+    left: -150px;
+  }
+  .blob-2 {
+    width: 400px;
+    height: 400px;
+    background: #8b5cf6; /* Purple Glow */
+    bottom: -100px;
+    right: -100px;
+    animation-delay: -6s;
+  }
+
+  @keyframes floatParticle {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      transform: translateY(50px) scale(1.1);
+    }
+  }
+
+  /* Glass Card */
   .login-panel {
-    max-width: 100%;
-    padding: 2.5rem;
-    box-shadow: none;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 460px;
+    padding: 3rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    box-shadow:
+      0 30px 60px -15px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    margin: 20px;
   }
-}
+
+  /* Logo Setup */
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .logo-container svg {
+    width: 70px;
+    height: 70px;
+    filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.5));
+  }
+
+  .login-title {
+    font-size: 2rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, #60a5fa, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .login-subtitle {
+    text-align: center;
+    color: #94a3b8;
+    margin-bottom: 2.5rem;
+    font-size: 0.95rem;
+  }
+
+  .login-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.5px;
+  }
+
+  .login-input {
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+  }
+  .login-input:focus {
+    outline: none;
+    border-color: #60a5fa;
+    background: rgba(15, 23, 42, 0.9);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  }
+  .login-input::placeholder {
+    color: #475569;
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 1.1rem;
+    background: linear-gradient(135deg, #2563eb 0%, #6d28d9 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.5);
+    letter-spacing: 1px;
+  }
+  .login-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.7);
+  }
+  .login-btn:active {
+    transform: translateY(0);
+  }
+
+  /* Responsif Mobile Khusus Glassmorphism */
+  @media (max-width: 600px) {
+    .login-panel {
+      padding: 2.5rem 1.5rem;
+    }
+    .login-title {
+      font-size: 1.7rem;
+    }
+  }
 </style>

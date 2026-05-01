@@ -129,7 +129,7 @@
   }
 
   /**
-   * Merender halaman Login Split-Screen Ultra Premium
+   * Merender UI Glassmorphism dengan Partikel dan Logo Animasi (NAMA & BLOK)
    */
   function renderLoginScreen() {
     const appRoot = document.getElementById("app-root");
@@ -139,87 +139,111 @@
     const wrapper = document.createElement("div");
     wrapper.className = "login-wrapper";
 
-    // 2. Banner Kiri (Akan hilang di Mobile)
-    const banner = document.createElement("div");
-    banner.className = "login-banner";
+    // 2. Efek Partikel Background
+    const blob1 = document.createElement("div");
+    blob1.className = "particle-blob blob-1";
+    const blob2 = document.createElement("div");
+    blob2.className = "particle-blob blob-2";
+    wrapper.appendChild(blob1);
+    wrapper.appendChild(blob2);
 
-    const bannerTitle = document.createElement("h1");
-    bannerTitle.className = "banner-title";
-    bannerTitle.textContent = "SIWARGA APP";
-
-    const bannerSubtitle = document.createElement("p");
-    bannerSubtitle.className = "banner-subtitle";
-    bannerSubtitle.textContent = "Sistem Manajemen Enterprise Terpadu. Dibangun dengan arsitektur Zero-Trust RBAC untuk memastikan keamanan dan efisiensi operasional organisasi tingkat tinggi.";
-
-    banner.appendChild(bannerTitle);
-    banner.appendChild(bannerSubtitle);
-
-    // 3. Panel Kanan (Form Login)
+    // 3. Panel Glassmorphism
     const panel = document.createElement("div");
     panel.className = "login-panel";
 
+    // 4. Logo SVG Premium (Murni DOM Engine - createElementNS)
+    const logoContainer = document.createElement("div");
+    logoContainer.className = "logo-container";
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+
+    const defs = document.createElementNS(svgNS, "defs");
+    const grad = document.createElementNS(svgNS, "linearGradient");
+    grad.setAttribute("id", "logoGradient");
+    grad.setAttribute("x1", "0%");
+    grad.setAttribute("y1", "0%");
+    grad.setAttribute("x2", "100%");
+    grad.setAttribute("y2", "100%");
+
+    const stop1 = document.createElementNS(svgNS, "stop");
+    stop1.setAttribute("offset", "0%");
+    stop1.setAttribute("stop-color", "#60a5fa");
+    const stop2 = document.createElementNS(svgNS, "stop");
+    stop2.setAttribute("offset", "100%");
+    stop2.setAttribute("stop-color", "#c084fc");
+
+    grad.appendChild(stop1);
+    grad.appendChild(stop2);
+    defs.appendChild(grad);
+
+    // Icon Bentuk Geometris/Gedung Modern
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5");
+    path.setAttribute("stroke", "url(#logoGradient)");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+
+    svg.appendChild(defs);
+    svg.appendChild(path);
+    logoContainer.appendChild(svg);
+
+    // Teks Judul
     const title = document.createElement("h2");
     title.className = "login-title";
-    title.textContent = "Portal Akses";
+    title.textContent = "SIWARGA APP";
 
     const subtitle = document.createElement("p");
     subtitle.className = "login-subtitle";
-    subtitle.textContent = "Silakan masukkan kredensial SIWARGA APP Anda.";
+    subtitle.textContent = "Autentikasi Terenkripsi Ekosistem Warga";
 
-    // Group NIK
-    const nikGroup = document.createElement("div");
-    nikGroup.className = "input-group";
-    const nikLabel = document.createElement("label");
-    nikLabel.className = "login-label";
-    nikLabel.textContent = "Nomor Induk Kependudukan (NIK)";
-    const nikInput = document.createElement("input");
-    nikInput.type = "text";
-    nikInput.id = "inputNik";
-    nikInput.className = "login-input";
-    nikInput.placeholder = "16 Digit NIK Anda";
+    // Input NAMA LENGKAP
+    const namaLabel = document.createElement("label");
+    namaLabel.className = "login-label";
+    namaLabel.textContent = "NAMA LENGKAP";
+    const namaInput = document.createElement("input");
+    namaInput.type = "text";
+    namaInput.id = "inputNama";
+    namaInput.className = "login-input";
+    namaInput.placeholder = "Contoh: Bapak Super Admin";
 
-    nikGroup.appendChild(nikLabel);
-    nikGroup.appendChild(nikInput);
-
-    // Group No HP
-    const hpGroup = document.createElement("div");
-    hpGroup.className = "input-group";
-    const hpLabel = document.createElement("label");
-    hpLabel.className = "login-label";
-    hpLabel.textContent = "Nomor WhatsApp / Sandi";
-    const hpInput = document.createElement("input");
-    hpInput.type = "password";
-    hpInput.id = "inputHp";
-    hpInput.className = "login-input";
-    hpInput.placeholder = "08xxxxxxxxxx";
-
-    hpGroup.appendChild(hpLabel);
-    hpGroup.appendChild(hpInput);
+    // Input BLOK RUMAH
+    const blokLabel = document.createElement("label");
+    blokLabel.className = "login-label";
+    blokLabel.textContent = "NOMOR / BLOK RUMAH";
+    const blokInput = document.createElement("input");
+    blokInput.type = "text";
+    blokInput.id = "inputBlok";
+    blokInput.className = "login-input";
+    blokInput.placeholder = "Contoh: Blok A/1";
 
     // Pesan Error
     const errorMsg = document.createElement("p");
-    errorMsg.style.color = "#ef4444";
-    errorMsg.style.fontSize = "0.875rem";
-    errorMsg.style.fontWeight = "500";
+    errorMsg.style.color = "#f87171"; // Merah neon
+    errorMsg.style.fontSize = "0.85rem";
+    errorMsg.style.textAlign = "center";
     errorMsg.style.marginTop = "1rem";
-    errorMsg.style.minHeight = "20px"; // placeholder tinggi error
+    errorMsg.style.minHeight = "20px";
 
-    // Tombol Submit
+    // Tombol Login
     const loginBtn = document.createElement("button");
     loginBtn.className = "login-btn";
-    loginBtn.textContent = "Otorisasi Akses";
+    loginBtn.textContent = "SINKRONISASI DATA";
 
-    // Event Listener (Sama seperti sebelumnya)
+    // Logika Eksekusi Login
     loginBtn.addEventListener("click", () => {
-      const nik = document.getElementById("inputNik").value.trim();
-      const hp = document.getElementById("inputHp").value.trim();
+      const nama = document.getElementById("inputNama").value;
+      const blok = document.getElementById("inputBlok").value;
 
-      if (!nik || !hp) {
-        errorMsg.textContent = "Kredensial tidak lengkap. Harap isi NIK dan No. WhatsApp.";
+      if (!nama || !blok) {
+        errorMsg.textContent = "Kredensial wajib diisi secara lengkap.";
         return;
       }
 
-      loginBtn.textContent = "Memverifikasi Protokol...";
+      loginBtn.textContent = "MENGHUBUNGKAN...";
       loginBtn.disabled = true;
       errorMsg.textContent = "";
 
@@ -230,22 +254,24 @@
         })
         .withFailureHandler((error) => {
           errorMsg.textContent = error.message;
-          loginBtn.textContent = "Otorisasi Akses";
+          loginBtn.textContent = "SINKRONISASI DATA";
           loginBtn.disabled = false;
         })
-        .authenticateUser(nik, hp);
+        .authenticateUser(nama, blok);
     });
 
-    // Susun Panel Kanan
+    // Susun Panel
+    panel.appendChild(logoContainer);
     panel.appendChild(title);
     panel.appendChild(subtitle);
-    panel.appendChild(nikGroup);
-    panel.appendChild(hpGroup);
+    panel.appendChild(namaLabel);
+    panel.appendChild(namaInput);
+    panel.appendChild(blokLabel);
+    panel.appendChild(blokInput);
     panel.appendChild(loginBtn);
     panel.appendChild(errorMsg);
 
-    // Gabungkan ke Wrapper
-    wrapper.appendChild(banner);
+    // Susun ke Root
     wrapper.appendChild(panel);
     appRoot.appendChild(wrapper);
   }

@@ -15,31 +15,33 @@ const ROLE_LEVEL = {
 };
 
 /**
- * Memverifikasi kredensial login (Sementara menggunakan NIK dan No HP)
- * Mengembalikan objek sesi data pengguna jika valid.
+ * Memverifikasi kredensial login (Menggunakan NAMA dan BLOK RUMAH)
  */
-function authenticateUser(nik, noHp) {
+function authenticateUser(namaInput, blokInput) {
   const sheet = getSheetWarga();
   const data = sheet.getDataRange().getValues();
 
-  // Menggunakan Reverse Loop untuk memastikan kita mengambil data pembaruan
-  // terakhir jika secara kebetulan ada duplikasi NIK di bawah.
-  for (let i = data.length - 1; i > 0; i--) {
-    let rowNik = data[i][0].toString();
-    let rowNoHp = data[i][2].toString();
+  // Normalisasi input dari pengguna (hapus spasi lebih & jadikan huruf kecil)
+  let inputN = namaInput.toString().trim().toLowerCase();
+  let inputB = blokInput.toString().trim().toLowerCase();
 
-    // Validasi kredensial (pastikan tipe data string cocok)
-    if (rowNik === nik.toString() && rowNoHp === noHp.toString()) {
+  // Reverse Loop Strategy
+  for (let i = data.length - 1; i > 0; i--) {
+    let rowNama = data[i][1].toString().trim().toLowerCase();
+    let rowBlok = data[i][3].toString().trim().toLowerCase();
+
+    // Validasi kredensial
+    if (rowNama === inputN && rowBlok === inputB) {
       let status = data[i][6];
       if (status !== "AKTIF") {
-        throw new Error("Akun tidak aktif atau ditangguhkan. Silakan hubungi Pengurus RT.");
+        throw new Error("Akun ditangguhkan. Silakan hubungi Pengurus RT.");
       }
 
       let roleString = data[i][5];
 
       return {
-        nik: rowNik,
-        nama: data[i][1],
+        nik: data[i][0],
+        nama: data[i][1], // Kembalikan nama dengan huruf besar/kecil aslinya
         blokRumah: data[i][3],
         jabatan: data[i][4],
         role: roleString,
@@ -48,7 +50,7 @@ function authenticateUser(nik, noHp) {
     }
   }
 
-  throw new Error("Kredensial tidak valid. NIK atau Nomor HP salah.");
+  throw new Error("Akses Ditolak: Nama atau Nomor/Blok Rumah tidak cocok.");
 }
 
 /**

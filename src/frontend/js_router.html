@@ -2,7 +2,8 @@
   /**
    * ==========================================
    * S.I.W.A.R.G.A - ZERO-LATENCY ROUTER ENGINE
-   * Modul Data Penduduk dengan CRUD & Live Filter
+   * STATUS: PRODUCTION STABLE
+   * Modul Aktif: Dashboard, Data Penduduk, Keuangan
    * ==========================================
    */
 
@@ -23,8 +24,11 @@
       case "data":
         renderViewDataPenduduk(pageContainer);
         break;
+      case "keuangan":
+        renderViewKeuangan(pageContainer);
+        break; // ROUTER KEUANGAN AKTIF
       default:
-        renderViewPlaceholder(pageContainer, "Modul Sedang Dirakit", "Silakan akses menu Data Penduduk untuk menguji fitur CRUD & Filter.");
+        renderViewPlaceholder(pageContainer, "Modul Sedang Dirakit", "Modul ini sedang dalam tahap pengembangan iterasi berikutnya.");
     }
   }
 
@@ -38,7 +42,7 @@
 
   /**
    * ==========================================
-   * VIEW: DATA PENDUDUK (FULL CRUD)
+   * VIEW: DATA PENDUDUK (PRODUCTION LOCK)
    * ==========================================
    */
   function renderViewDataPenduduk(container) {
@@ -68,83 +72,60 @@
     loadWargaTable(tableContainer);
   }
 
-  // FUNGSI MEMUAT TABEL & MESIN FILTER
   function loadWargaTable(container) {
     container.innerHTML = '<div class="loading-text">Menyinkronkan data dengan database...</div>';
 
     google.script.run
       .withSuccessHandler((dataWarga) => {
-        container.innerHTML = ""; // Bersihkan loading
+        container.innerHTML = "";
 
-        // 1. RAKIT TOOLBAR FILTER & SEARCH
         const toolbar = document.createElement("div");
         toolbar.className = "table-toolbar";
-
         const searchInput = document.createElement("input");
         searchInput.type = "text";
         searchInput.className = "form-control toolbar-search";
-        searchInput.placeholder = "Cari Nama, Username, Blok, atau Jabatan...";
-
+        searchInput.placeholder = "Cari Nama, Username, Blok...";
         const filterRole = document.createElement("select");
         filterRole.className = "form-control toolbar-filter";
-        filterRole.innerHTML = `
-        <option value="ALL">Semua Hak Akses</option>
-        <option value="SUPER_ADMIN">Super Admin</option>
-        <option value="KETUA_RT">Ketua RT</option>
-        <option value="PENGURUS">Pengurus</option>
-        <option value="KORLAP_GANG">Korlap Gang</option>
-        <option value="WARGA">Warga</option>
-      `;
-
+        filterRole.innerHTML = `<option value="ALL">Semua Hak Akses</option><option value="SUPER_ADMIN">Super Admin</option><option value="KETUA_RT">Ketua RT</option><option value="PENGURUS">Pengurus</option><option value="KORLAP_GANG">Korlap Gang</option><option value="WARGA">Warga</option>`;
         const filterStatus = document.createElement("select");
         filterStatus.className = "form-control toolbar-filter";
-        filterStatus.innerHTML = `
-        <option value="ALL">Semua Status</option>
-        <option value="AKTIF">Aktif</option>
-        <option value="NON-AKTIF">Non-Aktif</option>
-      `;
+        filterStatus.innerHTML = `<option value="ALL">Semua Status</option><option value="AKTIF">Aktif</option><option value="NON-AKTIF">Non-Aktif</option>`;
 
         toolbar.appendChild(searchInput);
         toolbar.appendChild(filterRole);
         toolbar.appendChild(filterStatus);
         container.appendChild(toolbar);
 
-        // 2. RAKIT KERANGKA TABEL
         const wrap = document.createElement("div");
         wrap.className = "table-container";
         const scroll = document.createElement("div");
         scroll.className = "table-wrapper";
         const table = document.createElement("table");
         table.className = "enterprise-table";
-
         const thead = document.createElement("thead");
         const trHead = document.createElement("tr");
-        ["USERNAME", "NAMA", "BLOK", "JABATAN", "ROLE", "STATUS", "AKSI"].forEach((teks) => {
+        ["USERNAME", "NAMA", "BLOK", "JABATAN", "ROLE", "STATUS", "AKSI"].forEach((t) => {
           const th = document.createElement("th");
-          th.textContent = teks;
+          th.textContent = t;
           trHead.appendChild(th);
         });
         thead.appendChild(trHead);
         table.appendChild(thead);
-
         const tbody = document.createElement("tbody");
         table.appendChild(tbody);
         scroll.appendChild(table);
         wrap.appendChild(scroll);
         container.appendChild(wrap);
 
-        // 3. FUNGSI RENDER BARIS (Dapat dipanggil berulang kali secara instan)
         function renderRows(data) {
-          tbody.innerHTML = ""; // Bersihkan baris lama
-
+          tbody.innerHTML = "";
           if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #64748b;">Tidak ada data yang cocok dengan kriteria pencarian.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #64748b;">Data tidak ditemukan.</td></tr>';
             return;
           }
-
           data.forEach((warga) => {
             const tr = document.createElement("tr");
-
             const tdUser = document.createElement("td");
             tdUser.textContent = warga.USERNAME;
             tdUser.style.color = "#64748b";
@@ -182,12 +163,10 @@
             btnEdit.className = "btn-edit";
             btnEdit.textContent = "Edit";
             btnEdit.onclick = () => openWargaModal("EDIT", warga, container);
-
             const btnDel = document.createElement("button");
             btnDel.className = "btn-danger";
             btnDel.textContent = "Hapus";
             btnDel.onclick = () => confirmDeleteWarga(warga.USERNAME, warga.NAMA, container);
-
             tdAksi.appendChild(btnEdit);
             tdAksi.appendChild(btnDel);
             tr.appendChild(tdAksi);
@@ -195,34 +174,21 @@
           });
         }
 
-        // 4. LOGIKA FILTER REAL-TIME
         function applyFilters() {
           const keyword = searchInput.value.toLowerCase();
           const selRole = filterRole.value;
           const selStatus = filterStatus.value;
-
           const filteredData = dataWarga.filter((warga) => {
-            // Cek Pencarian Teks (Cari di Nama, Username, Blok, atau Jabatan)
             const textMatch = warga.NAMA.toLowerCase().includes(keyword) || warga.USERNAME.toLowerCase().includes(keyword) || warga.BLOK_RUMAH.toLowerCase().includes(keyword) || warga.JABATAN.toLowerCase().includes(keyword);
-
-            // Cek Dropdown Role
             const roleMatch = selRole === "ALL" || warga.ROLE === selRole;
-
-            // Cek Dropdown Status
             const statusMatch = selStatus === "ALL" || warga.STATUS === selStatus;
-
             return textMatch && roleMatch && statusMatch;
           });
-
           renderRows(filteredData);
         }
-
-        // 5. PASANG EVENT LISTENER TRIGGER
         searchInput.addEventListener("input", applyFilters);
         filterRole.addEventListener("change", applyFilters);
         filterStatus.addEventListener("change", applyFilters);
-
-        // Eksekusi Render Pertama Kali
         renderRows(dataWarga);
       })
       .withFailureHandler((error) => {
@@ -231,26 +197,17 @@
       .getAllWarga();
   }
 
-  /**
-   * ==========================================
-   * MESIN MODAL FORMULAR & DELETE (DOM MURNI)
-   * ==========================================
-   */
   function openWargaModal(mode, data = null, tableContainer) {
     const oldModal = document.getElementById("crudModal");
     if (oldModal) oldModal.remove();
-
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     overlay.id = "crudModal";
-
     const box = document.createElement("div");
     box.className = "modal-box";
-
     const header = document.createElement("div");
     header.className = "modal-header";
     header.textContent = mode === "ADD" ? "Form Tambah Penduduk" : "Edit Data Penduduk";
-
     const btnClose = document.createElement("button");
     btnClose.innerHTML = "&times;";
     btnClose.style.background = "none";
@@ -259,7 +216,6 @@
     btnClose.style.cursor = "pointer";
     btnClose.onclick = () => overlay.remove();
     header.appendChild(btnClose);
-
     const body = document.createElement("div");
     body.className = "modal-body";
 
@@ -281,7 +237,6 @@
       grp.appendChild(inp);
       body.appendChild(grp);
     }
-
     function createSelect(labelTxt, id, val, optionsArr) {
       const grp = document.createElement("div");
       grp.className = "form-group";
@@ -315,15 +270,12 @@
     errorText.style.fontSize = "0.85rem";
     errorText.style.marginTop = "10px";
     body.appendChild(errorText);
-
     const footer = document.createElement("div");
     footer.className = "modal-footer";
-
     const btnBatal = document.createElement("button");
     btnBatal.className = "btn-secondary";
     btnBatal.textContent = "Batal";
     btnBatal.onclick = () => overlay.remove();
-
     const btnSimpan = document.createElement("button");
     btnSimpan.className = "btn-primary";
     btnSimpan.textContent = "Simpan Data";
@@ -338,43 +290,38 @@
         ROLE: document.getElementById("mod_role").value,
         STATUS: document.getElementById("mod_status").value,
       };
-
       if (!payload.USERNAME || !payload.NAMA) {
         errorText.textContent = "Username dan Nama wajib diisi.";
         return;
       }
-
       btnSimpan.textContent = "Menyimpan...";
       btnSimpan.disabled = true;
       errorText.textContent = "";
-
-      if (mode === "ADD") {
-        google.script.run
-          .withSuccessHandler(() => {
-            overlay.remove();
-            loadWargaTable(tableContainer);
-          })
-          .withFailureHandler((err) => {
-            btnSimpan.textContent = "Simpan Data";
-            btnSimpan.disabled = false;
-            errorText.textContent = err.message;
-          })
-          .createWarga(payload);
-      } else {
-        google.script.run
-          .withSuccessHandler(() => {
-            overlay.remove();
-            loadWargaTable(tableContainer);
-          })
-          .withFailureHandler((err) => {
-            btnSimpan.textContent = "Simpan Data";
-            btnSimpan.disabled = false;
-            errorText.textContent = err.message;
-          })
-          .updateWarga(data.USERNAME, payload);
-      }
+      const action =
+        mode === "ADD"
+          ? google.script.run
+              .withSuccessHandler(() => {
+                overlay.remove();
+                loadWargaTable(tableContainer);
+              })
+              .withFailureHandler((err) => {
+                btnSimpan.textContent = "Simpan Data";
+                btnSimpan.disabled = false;
+                errorText.textContent = err.message;
+              })
+              .createWarga(payload)
+          : google.script.run
+              .withSuccessHandler(() => {
+                overlay.remove();
+                loadWargaTable(tableContainer);
+              })
+              .withFailureHandler((err) => {
+                btnSimpan.textContent = "Simpan Data";
+                btnSimpan.disabled = false;
+                errorText.textContent = err.message;
+              })
+              .updateWarga(data.USERNAME, payload);
     };
-
     footer.appendChild(btnBatal);
     footer.appendChild(btnSimpan);
     box.appendChild(header);
@@ -382,24 +329,167 @@
     box.appendChild(footer);
     overlay.appendChild(box);
     document.body.appendChild(overlay);
-
     setTimeout(() => overlay.classList.add("show"), 10);
   }
 
   function confirmDeleteWarga(username, nama, tableContainer) {
-    if (confirm(`PENGHAPUSAN PERMANEN\nApakah Anda yakin ingin menghapus warga [${nama}] dengan username "${username}"?`)) {
-      tableContainer.innerHTML = '<div class="loading-text">Menghapus data dari server...</div>';
+    if (confirm(`PENGHAPUSAN PERMANEN\nApakah Anda yakin menghapus warga [${nama}]?`)) {
+      tableContainer.innerHTML = '<div class="loading-text">Menghapus data...</div>';
       google.script.run
         .withSuccessHandler((msg) => {
           alert(msg);
           loadWargaTable(tableContainer);
         })
         .withFailureHandler((err) => {
-          alert("Gagal menghapus: " + err.message);
+          alert("Gagal: " + err.message);
           loadWargaTable(tableContainer);
         })
         .deleteWarga(username);
     }
+  }
+
+  /**
+   * ==========================================
+   * VIEW: KAS & KEUANGAN (NEW PRODUCTION MODULE)
+   * ==========================================
+   */
+  function renderViewKeuangan(container) {
+    const headerDiv = document.createElement("div");
+    headerDiv.style.display = "flex";
+    headerDiv.style.justifyContent = "space-between";
+    headerDiv.style.alignItems = "center";
+    headerDiv.style.marginBottom = "1.5rem";
+
+    const title = document.createElement("h2");
+    title.textContent = "Kas & Keuangan (Log Iuran)";
+    title.style.color = "#0f172a";
+
+    headerDiv.appendChild(title);
+    container.appendChild(headerDiv);
+
+    // Card Ringkasan Kas
+    const summaryContainer = document.createElement("div");
+    summaryContainer.style.display = "flex";
+    summaryContainer.style.gap = "20px";
+    summaryContainer.style.marginBottom = "20px";
+    summaryContainer.style.flexWrap = "wrap";
+
+    const totalKasCard = document.createElement("div");
+    totalKasCard.style.flex = "1";
+    totalKasCard.style.minWidth = "250px";
+    totalKasCard.style.background = "linear-gradient(135deg, #10b981, #059669)";
+    totalKasCard.style.color = "white";
+    totalKasCard.style.padding = "25px";
+    totalKasCard.style.borderRadius = "12px";
+    totalKasCard.style.boxShadow = "0 10px 15px -3px rgba(16, 185, 129, 0.3)";
+    totalKasCard.innerHTML = `<h3 style="font-size:0.9rem; margin-bottom:10px; font-weight:600; opacity:0.9;">Total Kas Terkumpul</h3><div id="saldoTotal" style="font-size:2rem; font-weight:800;">Rp 0</div>`;
+
+    summaryContainer.appendChild(totalKasCard);
+    container.appendChild(summaryContainer);
+
+    const tableContainer = document.createElement("div");
+    container.appendChild(tableContainer);
+
+    // Mulai memuat data dari DB Transaksi
+    loadTransaksiTable(tableContainer, totalKasCard);
+  }
+
+  function loadTransaksiTable(container, summaryCard) {
+    container.innerHTML = '<div class="loading-text">Menarik riwayat transaksi dari DB_TRANSAKSI...</div>';
+
+    google.script.run
+      .withSuccessHandler((dataTrx) => {
+        container.innerHTML = "";
+
+        // Kalkulasi Total Kas di Frontend
+        let totalSaldo = 0;
+        dataTrx.forEach((trx) => (totalSaldo += parseFloat(trx.NOMINAL || 0)));
+        document.getElementById("saldoTotal").textContent = "Rp " + totalSaldo.toLocaleString("id-ID");
+
+        // Toolbar Pencarian
+        const toolbar = document.createElement("div");
+        toolbar.className = "table-toolbar";
+        const searchInput = document.createElement("input");
+        searchInput.type = "text";
+        searchInput.className = "form-control toolbar-search";
+        searchInput.placeholder = "Cari ID Transaksi, Username, atau Bulan...";
+        toolbar.appendChild(searchInput);
+        container.appendChild(toolbar);
+
+        // Tabel Transaksi
+        const wrap = document.createElement("div");
+        wrap.className = "table-container";
+        const scroll = document.createElement("div");
+        scroll.className = "table-wrapper";
+        const table = document.createElement("table");
+        table.className = "enterprise-table";
+
+        const thead = document.createElement("thead");
+        const trHead = document.createElement("tr");
+        ["WAKTU (TIMESTAMP)", "ID TRANSAKSI", "USERNAME", "BULAN DIBAYAR", "PETUGAS", "NOMINAL"].forEach((t) => {
+          const th = document.createElement("th");
+          th.textContent = t;
+          trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        table.appendChild(tbody);
+        scroll.appendChild(table);
+        wrap.appendChild(scroll);
+        container.appendChild(wrap);
+
+        function renderRows(data) {
+          tbody.innerHTML = "";
+          if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #64748b;">Tidak ada transaksi ditemukan.</td></tr>';
+            return;
+          }
+          data.forEach((trx) => {
+            const tr = document.createElement("tr");
+            const tdTime = document.createElement("td");
+            tdTime.textContent = trx.TIMESTAMP;
+            tdTime.style.color = "#64748b";
+            tdTime.style.fontSize = "0.85rem";
+            tr.appendChild(tdTime);
+            const tdId = document.createElement("td");
+            tdId.textContent = trx.ID_TRANSAKSI;
+            tdId.style.fontWeight = "700";
+            tr.appendChild(tdId);
+            const tdUser = document.createElement("td");
+            tdUser.textContent = trx.USERNAME;
+            tr.appendChild(tdUser);
+            const tdBulan = document.createElement("td");
+            const badgeBulan = document.createElement("span");
+            badgeBulan.className = "badge badge-pengurus";
+            badgeBulan.textContent = trx.BULAN_DIBAYAR;
+            tdBulan.appendChild(badgeBulan);
+            tr.appendChild(tdBulan);
+            const tdPetugas = document.createElement("td");
+            tdPetugas.textContent = trx.PETUGAS;
+            tr.appendChild(tdPetugas);
+            const tdNominal = document.createElement("td");
+            tdNominal.textContent = "Rp " + parseFloat(trx.NOMINAL).toLocaleString("id-ID");
+            tdNominal.style.fontWeight = "700";
+            tdNominal.style.color = "#10b981";
+            tr.appendChild(tdNominal);
+            tbody.appendChild(tr);
+          });
+        }
+
+        function applyFilters() {
+          const keyword = searchInput.value.toLowerCase();
+          const filteredData = dataTrx.filter((trx) => trx.ID_TRANSAKSI.toLowerCase().includes(keyword) || trx.USERNAME.toLowerCase().includes(keyword) || trx.BULAN_DIBAYAR.toLowerCase().includes(keyword));
+          renderRows(filteredData);
+        }
+
+        searchInput.addEventListener("input", applyFilters);
+        renderRows(dataTrx);
+      })
+      .withFailureHandler((err) => {
+        container.innerHTML = `<div class="loading-text" style="color:red;">Error: ${err.message}</div>`;
+      })
+      .getAllTransaksi();
   }
 
   function renderViewPlaceholder(container, titleText, descText) {

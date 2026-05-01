@@ -754,4 +754,59 @@ horizontal tidak sengaja */
       width: 100%;
     }
   }
+
+  /* --- TAMBAHAN UPDATE: FREEZE SCROLL & PAGINATION --- */
+  .table-wrapper {
+    width: 100%;
+    max-height: 55vh; /* Batas tinggi tabel (Freeze Scroll) */
+    overflow-y: auto; /* Aktifkan scroll vertikal di dalam tabel */
+    overflow-x: auto; /* Aktifkan scroll horizontal */
+  }
+
+  /* Mengunci Header Tabel (Sticky) di posisi atas saat scroll ke bawah */
+  .enterprise-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f8fafc; /* Wajib diisi agar data yang lewat di bawahnya tidak tembus pandang */
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* Mengganti border-bottom agar ikut menempel */
+  }
+
+  .pagination-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .pagination-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .btn-page {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #0f172a;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .btn-page:hover:not(:disabled) {
+    background: #f1f5f9;
+  }
+
+  .btn-page:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  /* --- END TAMBAHAN --- */
 </style>

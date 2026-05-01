@@ -3,7 +3,7 @@
    * ==========================================
    * S.I.W.A.R.G.A - ZERO-LATENCY ROUTER ENGINE
    * STATUS: PRODUCTION STABLE
-   * Modul Aktif: Dashboard, Data Penduduk, Keuangan
+   * Modul Aktif: Dashboard, Data Penduduk, Keuangan (Dynamic Filter)
    * ==========================================
    */
 
@@ -26,7 +26,7 @@
         break;
       case "keuangan":
         renderViewKeuangan(pageContainer);
-        break; // ROUTER KEUANGAN AKTIF
+        break;
       default:
         renderViewPlaceholder(pageContainer, "Modul Sedang Dirakit", "Modul ini sedang dalam tahap pengembangan iterasi berikutnya.");
     }
@@ -72,6 +72,7 @@
     loadWargaTable(tableContainer);
   }
 
+  // FUNGSI MEMUAT TABEL DATA PENDUDUK (DENGAN PAGINATION & FREEZE SCROLL)
   function loadWargaTable(container) {
     container.innerHTML = '<div class="loading-text">Menyinkronkan data dengan database...</div>';
 
@@ -79,6 +80,12 @@
       .withSuccessHandler((dataWarga) => {
         container.innerHTML = "";
 
+        // VARIABEL STATE PAGINASI CLIENT-SIDE
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let currentFilteredData = dataWarga; // Menyimpan data yang sedang terfilter
+
+        // 1. TOOLBAR FILTER
         const toolbar = document.createElement("div");
         toolbar.className = "table-toolbar";
         const searchInput = document.createElement("input");
@@ -97,6 +104,7 @@
         toolbar.appendChild(filterStatus);
         container.appendChild(toolbar);
 
+        // 2. KERANGKA TABEL
         const wrap = document.createElement("div");
         wrap.className = "table-container";
         const scroll = document.createElement("div");
@@ -116,15 +124,68 @@
         table.appendChild(tbody);
         scroll.appendChild(table);
         wrap.appendChild(scroll);
+
+        // 3. KERANGKA PAGINASI (Di bawah tabel)
+        const paginationBar = document.createElement("div");
+        paginationBar.className = "pagination-toolbar";
+        const pageInfo = document.createElement("div");
+
+        const pageControls = document.createElement("div");
+        pageControls.className = "pagination-controls";
+
+        // Dropdown jumlah baris
+        const limitSelect = document.createElement("select");
+        limitSelect.className = "form-control";
+        limitSelect.style.width = "auto";
+        limitSelect.style.padding = "0.3rem";
+        [10, 25, 50, 100].forEach((val) => {
+          const opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = `${val} Baris`;
+          limitSelect.appendChild(opt);
+        });
+
+        const btnPrev = document.createElement("button");
+        btnPrev.className = "btn-page";
+        btnPrev.textContent = "Sebelumnya";
+        const btnNext = document.createElement("button");
+        btnNext.className = "btn-page";
+        btnNext.textContent = "Selanjutnya";
+
+        pageControls.appendChild(limitSelect);
+        pageControls.appendChild(btnPrev);
+        pageControls.appendChild(btnNext);
+        paginationBar.appendChild(pageInfo);
+        paginationBar.appendChild(pageControls);
+        wrap.appendChild(paginationBar);
         container.appendChild(wrap);
 
-        function renderRows(data) {
+        // 4. MESIN RENDER BARIS BERDASARKAN HALAMAN
+        function renderRows() {
           tbody.innerHTML = "";
-          if (data.length === 0) {
+
+          // Kalkulasi Paginasi
+          const totalRows = currentFilteredData.length;
+          const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+
+          if (currentPage > totalPages) currentPage = totalPages;
+          if (currentPage < 1) currentPage = 1;
+
+          const startIndex = (currentPage - 1) * rowsPerPage;
+          const endIndex = startIndex + rowsPerPage;
+          const pageData = currentFilteredData.slice(startIndex, endIndex); // Potong data sesuai halaman
+
+          // Update UI Paginasi
+          pageInfo.innerHTML = `Menampilkan <strong>${totalRows === 0 ? 0 : startIndex + 1} - ${Math.min(endIndex, totalRows)}</strong> dari <strong>${totalRows}</strong> data`;
+          btnPrev.disabled = currentPage === 1;
+          btnNext.disabled = currentPage === totalPages || totalRows === 0;
+
+          if (totalRows === 0) {
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #64748b;">Data tidak ditemukan.</td></tr>';
             return;
           }
-          data.forEach((warga) => {
+
+          pageData.forEach((warga) => {
             const tr = document.createElement("tr");
             const tdUser = document.createElement("td");
             tdUser.textContent = warga.USERNAME;
@@ -174,22 +235,46 @@
           });
         }
 
+        // 5. EVENT LISTENERS PAGINASI
+        btnPrev.addEventListener("click", () => {
+          if (currentPage > 1) {
+            currentPage--;
+            renderRows();
+          }
+        });
+        btnNext.addEventListener("click", () => {
+          const maxPage = Math.ceil(currentFilteredData.length / rowsPerPage);
+          if (currentPage < maxPage) {
+            currentPage++;
+            renderRows();
+          }
+        });
+        limitSelect.addEventListener("change", (e) => {
+          rowsPerPage = parseInt(e.target.value);
+          currentPage = 1;
+          renderRows();
+        });
+
+        // 6. MESIN FILTER
         function applyFilters() {
           const keyword = searchInput.value.toLowerCase();
           const selRole = filterRole.value;
           const selStatus = filterStatus.value;
-          const filteredData = dataWarga.filter((warga) => {
+          currentFilteredData = dataWarga.filter((warga) => {
             const textMatch = warga.NAMA.toLowerCase().includes(keyword) || warga.USERNAME.toLowerCase().includes(keyword) || warga.BLOK_RUMAH.toLowerCase().includes(keyword) || warga.JABATAN.toLowerCase().includes(keyword);
             const roleMatch = selRole === "ALL" || warga.ROLE === selRole;
             const statusMatch = selStatus === "ALL" || warga.STATUS === selStatus;
             return textMatch && roleMatch && statusMatch;
           });
-          renderRows(filteredData);
+          currentPage = 1; // Kembali ke halaman 1 setiap kali filter berubah
+          renderRows();
         }
+
         searchInput.addEventListener("input", applyFilters);
         filterRole.addEventListener("change", applyFilters);
         filterStatus.addEventListener("change", applyFilters);
-        renderRows(dataWarga);
+
+        renderRows(); // Render pertama kali
       })
       .withFailureHandler((error) => {
         container.innerHTML = `<div class="loading-text" style="color:red;">Error: ${error.message}</div>`;
@@ -350,7 +435,7 @@
 
   /**
    * ==========================================
-   * VIEW: KAS & KEUANGAN (NEW PRODUCTION MODULE)
+   * VIEW: KAS & KEUANGAN (DYNAMIC FINANCE ENGINE)
    * ==========================================
    */
   function renderViewKeuangan(container) {
@@ -367,7 +452,7 @@
     headerDiv.appendChild(title);
     container.appendChild(headerDiv);
 
-    // Card Ringkasan Kas
+    // Card Ringkasan Kas (Akan berubah dinamis sesuai filter)
     const summaryContainer = document.createElement("div");
     summaryContainer.style.display = "flex";
     summaryContainer.style.gap = "20px";
@@ -382,7 +467,7 @@
     totalKasCard.style.padding = "25px";
     totalKasCard.style.borderRadius = "12px";
     totalKasCard.style.boxShadow = "0 10px 15px -3px rgba(16, 185, 129, 0.3)";
-    totalKasCard.innerHTML = `<h3 style="font-size:0.9rem; margin-bottom:10px; font-weight:600; opacity:0.9;">Total Kas Terkumpul</h3><div id="saldoTotal" style="font-size:2rem; font-weight:800;">Rp 0</div>`;
+    totalKasCard.innerHTML = `<h3 style="font-size:0.9rem; margin-bottom:10px; font-weight:600; opacity:0.9;">Total Kas Terfilter</h3><div id="saldoTotal" style="font-size:2rem; font-weight:800;">Menghitung...</div>`;
 
     summaryContainer.appendChild(totalKasCard);
     container.appendChild(summaryContainer);
@@ -390,40 +475,51 @@
     const tableContainer = document.createElement("div");
     container.appendChild(tableContainer);
 
-    // Mulai memuat data dari DB Transaksi
-    loadTransaksiTable(tableContainer, totalKasCard);
+    loadTransaksiTable(tableContainer);
   }
 
-  function loadTransaksiTable(container, summaryCard) {
+  // FUNGSI MEMUAT TABEL TRANSAKSI (DENGAN PAGINATION & FREEZE SCROLL)
+  function loadTransaksiTable(container) {
     container.innerHTML = '<div class="loading-text">Menarik riwayat transaksi dari DB_TRANSAKSI...</div>';
 
     google.script.run
       .withSuccessHandler((dataTrx) => {
         container.innerHTML = "";
 
-        // Kalkulasi Total Kas di Frontend
-        let totalSaldo = 0;
-        dataTrx.forEach((trx) => (totalSaldo += parseFloat(trx.NOMINAL || 0)));
-        document.getElementById("saldoTotal").textContent = "Rp " + totalSaldo.toLocaleString("id-ID");
+        // VARIABEL STATE PAGINASI CLIENT-SIDE
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let currentFilteredData = dataTrx; // Default seluruh data
 
-        // Toolbar Pencarian
+        const uniqueBulan = [...new Set(dataTrx.map((item) => item.BULAN_DIBAYAR))];
+        const uniquePetugas = [...new Set(dataTrx.map((item) => item.PETUGAS))];
+
+        // TOOLBAR
         const toolbar = document.createElement("div");
         toolbar.className = "table-toolbar";
         const searchInput = document.createElement("input");
         searchInput.type = "text";
         searchInput.className = "form-control toolbar-search";
-        searchInput.placeholder = "Cari ID Transaksi, Username, atau Bulan...";
+        searchInput.placeholder = "Cari ID Transaksi atau Username...";
+        const filterBulan = document.createElement("select");
+        filterBulan.className = "form-control toolbar-filter";
+        filterBulan.innerHTML = `<option value="ALL">Semua Bulan</option>` + uniqueBulan.map((b) => `<option value="${b}">${b}</option>`).join("");
+        const filterPetugas = document.createElement("select");
+        filterPetugas.className = "form-control toolbar-filter";
+        filterPetugas.innerHTML = `<option value="ALL">Semua Petugas</option>` + uniquePetugas.map((p) => `<option value="${p}">${p}</option>`).join("");
+
         toolbar.appendChild(searchInput);
+        toolbar.appendChild(filterBulan);
+        toolbar.appendChild(filterPetugas);
         container.appendChild(toolbar);
 
-        // Tabel Transaksi
+        // KERANGKA TABEL
         const wrap = document.createElement("div");
         wrap.className = "table-container";
         const scroll = document.createElement("div");
         scroll.className = "table-wrapper";
         const table = document.createElement("table");
         table.className = "enterprise-table";
-
         const thead = document.createElement("thead");
         const trHead = document.createElement("tr");
         ["WAKTU (TIMESTAMP)", "ID TRANSAKSI", "USERNAME", "BULAN DIBAYAR", "PETUGAS", "NOMINAL"].forEach((t) => {
@@ -437,15 +533,69 @@
         table.appendChild(tbody);
         scroll.appendChild(table);
         wrap.appendChild(scroll);
+
+        // KERANGKA PAGINASI
+        const paginationBar = document.createElement("div");
+        paginationBar.className = "pagination-toolbar";
+        const pageInfo = document.createElement("div");
+        const pageControls = document.createElement("div");
+        pageControls.className = "pagination-controls";
+
+        const limitSelect = document.createElement("select");
+        limitSelect.className = "form-control";
+        limitSelect.style.width = "auto";
+        limitSelect.style.padding = "0.3rem";
+        [10, 25, 50, 100].forEach((val) => {
+          const opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = `${val} Baris`;
+          limitSelect.appendChild(opt);
+        });
+
+        const btnPrev = document.createElement("button");
+        btnPrev.className = "btn-page";
+        btnPrev.textContent = "Sebelumnya";
+        const btnNext = document.createElement("button");
+        btnNext.className = "btn-page";
+        btnNext.textContent = "Selanjutnya";
+
+        pageControls.appendChild(limitSelect);
+        pageControls.appendChild(btnPrev);
+        pageControls.appendChild(btnNext);
+        paginationBar.appendChild(pageInfo);
+        paginationBar.appendChild(pageControls);
+        wrap.appendChild(paginationBar);
         container.appendChild(wrap);
 
-        function renderRows(data) {
+        // RENDER BARIS & PAGINASI
+        function renderRows() {
           tbody.innerHTML = "";
-          if (data.length === 0) {
+
+          // PENTING: Total Kas selalu dihitung dari seluruh data terfilter (currentFilteredData), BUKAN hanya data per halaman (pageData).
+          let totalSaldo = 0;
+          currentFilteredData.forEach((trx) => (totalSaldo += parseFloat(trx.NOMINAL || 0)));
+          const saldoElement = document.getElementById("saldoTotal");
+          if (saldoElement) saldoElement.textContent = "Rp " + totalSaldo.toLocaleString("id-ID");
+
+          const totalRows = currentFilteredData.length;
+          const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+          if (currentPage > totalPages) currentPage = totalPages;
+          if (currentPage < 1) currentPage = 1;
+
+          const startIndex = (currentPage - 1) * rowsPerPage;
+          const endIndex = startIndex + rowsPerPage;
+          const pageData = currentFilteredData.slice(startIndex, endIndex);
+
+          pageInfo.innerHTML = `Menampilkan <strong>${totalRows === 0 ? 0 : startIndex + 1} - ${Math.min(endIndex, totalRows)}</strong> dari <strong>${totalRows}</strong> transaksi`;
+          btnPrev.disabled = currentPage === 1;
+          btnNext.disabled = currentPage === totalPages || totalRows === 0;
+
+          if (totalRows === 0) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #64748b;">Tidak ada transaksi ditemukan.</td></tr>';
             return;
           }
-          data.forEach((trx) => {
+
+          pageData.forEach((trx) => {
             const tr = document.createElement("tr");
             const tdTime = document.createElement("td");
             tdTime.textContent = trx.TIMESTAMP;
@@ -477,14 +627,46 @@
           });
         }
 
+        // EVENT LISTENERS PAGINASI
+        btnPrev.addEventListener("click", () => {
+          if (currentPage > 1) {
+            currentPage--;
+            renderRows();
+          }
+        });
+        btnNext.addEventListener("click", () => {
+          const maxPage = Math.ceil(currentFilteredData.length / rowsPerPage);
+          if (currentPage < maxPage) {
+            currentPage++;
+            renderRows();
+          }
+        });
+        limitSelect.addEventListener("change", (e) => {
+          rowsPerPage = parseInt(e.target.value);
+          currentPage = 1;
+          renderRows();
+        });
+
+        // MESIN FILTER
         function applyFilters() {
           const keyword = searchInput.value.toLowerCase();
-          const filteredData = dataTrx.filter((trx) => trx.ID_TRANSAKSI.toLowerCase().includes(keyword) || trx.USERNAME.toLowerCase().includes(keyword) || trx.BULAN_DIBAYAR.toLowerCase().includes(keyword));
-          renderRows(filteredData);
+          const selBulan = filterBulan.value;
+          const selPetugas = filterPetugas.value;
+          currentFilteredData = dataTrx.filter((trx) => {
+            const textMatch = trx.ID_TRANSAKSI.toLowerCase().includes(keyword) || trx.USERNAME.toLowerCase().includes(keyword);
+            const bulanMatch = selBulan === "ALL" || trx.BULAN_DIBAYAR === selBulan;
+            const petugasMatch = selPetugas === "ALL" || trx.PETUGAS === selPetugas;
+            return textMatch && bulanMatch && petugasMatch;
+          });
+          currentPage = 1;
+          renderRows();
         }
 
         searchInput.addEventListener("input", applyFilters);
-        renderRows(dataTrx);
+        filterBulan.addEventListener("change", applyFilters);
+        filterPetugas.addEventListener("change", applyFilters);
+
+        renderRows(); // Render pertama
       })
       .withFailureHandler((err) => {
         container.innerHTML = `<div class="loading-text" style="color:red;">Error: ${err.message}</div>`;

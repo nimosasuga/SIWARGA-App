@@ -116,7 +116,7 @@
       .withFailureHandler((error) => {
         gridContainer.innerHTML = `<div class="loading-text" style="color:red; grid-column: 1/-1;">Error Analytics: ${error.message}</div>`;
       })
-      .getDashboardSummary();
+      .getDashboardSummary(UI_STATE.user);
   }
 
   /**
@@ -358,7 +358,7 @@
       .withFailureHandler((error) => {
         container.innerHTML = `<div class="loading-text" style="color:red;">Error: ${error.message}</div>`;
       })
-      .getAllWarga();
+      .getAllWarga(UI_STATE.user);
   }
 
   function openWargaModal(mode, data = null, tableContainer) {
@@ -473,7 +473,7 @@
                 btnSimpan.disabled = false;
                 errorText.textContent = err.message;
               })
-              .createWarga(payload)
+              .createWarga(UI_STATE.user, payload) // INJEKSI KUNCI BRANKAS
           : google.script.run
               .withSuccessHandler(() => {
                 overlay.remove();
@@ -484,7 +484,7 @@
                 btnSimpan.disabled = false;
                 errorText.textContent = err.message;
               })
-              .updateWarga(data.USERNAME, payload);
+              .updateWarga(UI_STATE.user, data.USERNAME, payload);
     };
     footer.appendChild(btnBatal);
     footer.appendChild(btnSimpan);
@@ -750,7 +750,7 @@
       .withFailureHandler((err) => {
         container.innerHTML = `<div class="loading-text" style="color:red;">Error: ${err.message}</div>`;
       })
-      .getAllTransaksi();
+      .getAllTransaksi(UI_STATE.user);
   }
 
   function renderViewPlaceholder(container, titleText, descText) {
@@ -944,6 +944,6 @@
       .withFailureHandler((err) => {
         container.innerHTML = `<div class="loading-text" style="color:red;">Error Akses Data: ${err.message}</div>`;
       })
-      .getTransaksiByUser(username);
+      .getTransaksiByUser(UI_STATE.user, username);
   }
 </script>

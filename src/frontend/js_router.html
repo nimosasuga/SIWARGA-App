@@ -465,9 +465,9 @@
       const action =
         mode === "ADD"
           ? google.script.run
-              .withSuccessHandler(() => {
+              .withSuccessHandler((msg) => {
                 overlay.remove();
-                // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+                showToast(msg || "Data berhasil ditambahkan", "success"); // Menggunakan Toast
                 if (tableContainer.id === "tableContainerManajemen") {
                   loadManajemenWargaTable(tableContainer);
                 } else {
@@ -481,9 +481,9 @@
               })
               .createWarga(UI_STATE.user, payload)
           : google.script.run
-              .withSuccessHandler(() => {
+              .withSuccessHandler((msg) => {
                 overlay.remove();
-                // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+                showToast(msg || "Data berhasil diperbarui", "success"); // Menggunakan Toast
                 if (tableContainer.id === "tableContainerManajemen") {
                   loadManajemenWargaTable(tableContainer);
                 } else {
@@ -508,12 +508,12 @@
   }
 
   function confirmDeleteWarga(username, nama, tableContainer) {
-    if (confirm(`PENGHAPUSAN PERMANEN\nApakah Anda yakin menghapus warga [${nama}]?`)) {
+    // Memanggil Custom Confirm Dialog
+    showConfirm("Konfirmasi Penghapusan", `Apakah Anda yakin ingin menghapus data warga [${nama}]? Tindakan ini bersifat permanen dan akan menghapus akses login warga tersebut.`, () => {
       tableContainer.innerHTML = '<div class="loading-text">Menghapus data...</div>';
       google.script.run
         .withSuccessHandler((msg) => {
-          alert(msg);
-          // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+          showToast(msg, "success"); // Menggunakan Toast
           if (tableContainer.id === "tableContainerManajemen") {
             loadManajemenWargaTable(tableContainer);
           } else {
@@ -521,8 +521,7 @@
           }
         })
         .withFailureHandler((err) => {
-          alert("Gagal: " + err.message);
-          // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+          showToast("Gagal: " + err.message, "error"); // Menggunakan Toast
           if (tableContainer.id === "tableContainerManajemen") {
             loadManajemenWargaTable(tableContainer);
           } else {
@@ -530,7 +529,7 @@
           }
         })
         .deleteWarga(UI_STATE.user, username);
-    }
+    });
   }
 
   /**

@@ -878,4 +878,93 @@ horizontal tidak sengaja */
     color: #0f172a;
     margin: 0;
   }
+
+  /* =========================================
+       [BUGFIX] MOBILE RESPONSIVE PAGINATION
+       ========================================= */
+  @media screen and (max-width: 768px) {
+    /* Memastikan container tabel bisa di-scroll secara horizontal tanpa mengganggu elemen luar */
+    .table-responsive,
+    div[style*="overflow-x: auto"] {
+      width: 100% !important;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 15px;
+    }
+
+    /* Menargetkan container paginasi (mengamankan elemen flex di bawah tabel) */
+    /* Catatan: Sesuaikan '.pagination-container' dengan class name yang Anda gunakan saat CreateElement di JS, 
+           atau jika Anda menggunakan inline-style, selector di bawah ini akan menangkapnya otomatis */
+    .pagination-container,
+    div[style*="justify-content: space-between"][style*="align-items: center"] {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      gap: 10px !important;
+      width: 100% !important;
+      padding: 10px 0 !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Menyesuaikan ukuran tombol agar tidak memakan ruang dan teks tidak terpotong */
+    .pagination-container button,
+    div[style*="justify-content: space-between"] button {
+      flex: 1 1 45% !important; /* Tombol memakan maksimal 45% lebar layar */
+      min-width: 120px !important;
+      padding: 10px 5px !important;
+      font-size: 13px !important;
+      white-space: normal !important; /* Membungkus teks panjang jika perlu */
+      text-align: center !important;
+    }
+
+    /* Memastikan teks indikator halaman (Halaman 1 dari X) berada di tengah atau di atas tombol */
+    .pagination-container span,
+    div[style*="justify-content: space-between"] span {
+      width: 100% !important;
+      text-align: center !important;
+      order: -1 !important; /* Memaksa info halaman tampil di ATAS tombol pada layar kecil */
+      margin-bottom: 8px !important;
+      font-size: 14px !important;
+    }
+  }
+
+  /* =========================================
+       [BUGFIX] MOBILE RESPONSIVE PAGINATION
+       ========================================= */
+  @media screen and (max-width: 768px) {
+    /* Mengizinkan toolbar utama untuk membungkus elemen ke bawah */
+    .pagination-toolbar {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      height: auto !important; /* Mencegah elemen terpotong jika ada tinggi tetap */
+      padding: 15px 10px !important;
+      gap: 15px !important;
+    }
+
+    /* Mengatur agar teks info (seperti "Menampilkan 1 - 10...") mengambil lebar penuh dan berada di atas */
+    .pagination-toolbar > div:not(.pagination-controls) {
+      width: 100% !important;
+      text-align: center !important;
+      order: 1 !important;
+    }
+
+    /* Mengatur grup tombol agar mengambil lebar penuh di bawah teks info */
+    .pagination-controls {
+      width: 100% !important;
+      display: flex !important;
+      justify-content: space-between !important; /* Tombol Sebelumnya di kiri, Selanjutnya di kanan */
+      gap: 10px !important;
+      order: 2 !important;
+    }
+
+    /* Menyesuaikan tombol agar fleksibel dan tidak keluar batas layar */
+    .btn-page {
+      flex: 1 !important; /* Memaksa tombol berbagi ruang secara adil */
+      min-width: 0 !important; /* Mencegah tombol melampaui kontainer */
+      padding: 12px 5px !important; /* Area sentuh yang lebih besar untuk jari (Fat-finger friendly) */
+      font-size: 13px !important;
+      white-space: normal !important; /* Teks akan membungkus ke bawah jika terlalu panjang */
+      text-align: center !important;
+    }
+  }
 </style>

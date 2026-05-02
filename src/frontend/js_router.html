@@ -627,11 +627,9 @@
     });
   }
 
-  /**
-   * ==========================================
-   * VIEW: KAS & KEUANGAN (DYNAMIC FINANCE ENGINE)
-   * ==========================================
-   */
+  // File: src/frontend/js_router.html
+  // [LOCATOR: Ganti seluruh fungsi renderViewKeuangan dengan blok ini, dan pastikan openIuranModal ikut tergabung di bawahnya]
+
   function renderViewKeuangan(container) {
     const headerDiv = document.createElement("div");
     headerDiv.style.display = "flex";
@@ -642,11 +640,24 @@
     const title = document.createElement("h2");
     title.textContent = "Kas & Keuangan (Log Iuran)";
     title.style.color = "#0f172a";
-
     headerDiv.appendChild(title);
+
+    const tableContainer = document.createElement("div");
+    tableContainer.id = "tableContainerKeuangan";
+
+    // Proteksi Tombol Kasir: Hanya muncul untuk role tertentu
+    const isKasirAllowed = ["SUPER_ADMIN", "KETUA_RT", "BENDAHARA"].includes(UI_STATE.user.role);
+    if (isKasirAllowed) {
+      const btnAdd = document.createElement("button");
+      btnAdd.className = "btn-primary";
+      btnAdd.textContent = "+ Catat Iuran";
+      btnAdd.onclick = () => openIuranModal(tableContainer);
+      headerDiv.appendChild(btnAdd);
+    }
+
     container.appendChild(headerDiv);
 
-    // Card Ringkasan Kas (Akan berubah dinamis sesuai filter)
+    // Card Ringkasan Kas
     const summaryContainer = document.createElement("div");
     summaryContainer.style.display = "flex";
     summaryContainer.style.gap = "20px";
@@ -665,46 +676,218 @@
 
     summaryContainer.appendChild(totalKasCard);
     container.appendChild(summaryContainer);
-
-    const tableContainer = document.createElement("div");
     container.appendChild(tableContainer);
 
     loadTransaksiTable(tableContainer);
   }
 
-  // FUNGSI MEMUAT TABEL TRANSAKSI (DENGAN PAGINATION & FREEZE SCROLL)
+  // FUNGSI BARU: MESIN KASIR (MODAL IURAN)
+  function openIuranModal(tableContainer) {
+    const oldModal = document.getElementById("crudModal");
+    if (oldModal) oldModal.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.id = "crudModal";
+
+    const box = document.createElement("div");
+    box.className = "modal-box";
+
+    const header = document.createElement("div");
+    header.className = "modal-header";
+    header.textContent = "Catat Pembayaran Iuran";
+
+    const btnClose = document.createElement("button");
+    btnClose.innerHTML = "&times;";
+    btnClose.style.background = "none";
+    btnClose.style.border = "none";
+    btnClose.style.fontSize = "1.5rem";
+    btnClose.style.cursor = "pointer";
+    btnClose.onclick = () => overlay.remove();
+    header.appendChild(btnClose);
+
+    const body = document.createElement("div");
+    body.className = "modal-body";
+    body.innerHTML = '<div class="loading-text">Menyiapkan buku kas & memuat daftar warga...</div>';
+
+    const footer = document.createElement("div");
+    footer.className = "modal-footer";
+
+    box.appendChild(header);
+    box.appendChild(body);
+    box.appendChild(footer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.classList.add("show"), 10);
+
+    // Menarik Data Warga untuk Dropdown secara Real-Time
+    google.script.run
+      .withSuccessHandler((dataWarga) => {
+        body.innerHTML = ""; // Bersihkan loading
+
+        // 1. Field Dropdown Warga (Hanya yang AKTIF)
+        const grpWarga = document.createElement("div");
+        grpWarga.className = "form-group";
+        const lblWarga = document.createElement("label");
+        lblWarga.textContent = "Pilih Warga Pembayar";
+        const selWarga = document.createElement("select");
+        selWarga.className = "form-control";
+        selWarga.id = "kasir_username";
+
+        const wargaAktif = dataWarga.filter((w) => w.STATUS === "AKTIF");
+        selWarga.innerHTML = `<option value="">-- Pilih Warga --</option>`;
+        wargaAktif.forEach((w) => {
+          const opt = document.createElement("option");
+          opt.value = w.USERNAME;
+          opt.textContent = `${w.BLOK_RUMAH} - ${w.NAMA_LENGKAP || w.NAMA}`;
+          selWarga.appendChild(opt);
+        });
+        grpWarga.appendChild(lblWarga);
+        grpWarga.appendChild(selWarga);
+        body.appendChild(grpWarga);
+
+        // 2. Field Dropdown Bulan Tagihan Pintar (Otomatis)
+        const grpBulan = document.createElement("div");
+        grpBulan.className = "form-group";
+        const lblBulan = document.createElement("label");
+        lblBulan.textContent = "Untuk Pembayaran Bulan";
+        const selBulan = document.createElement("select");
+        selBulan.className = "form-control";
+        selBulan.id = "kasir_bulan";
+
+        const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        const dateNow = new Date();
+        const currentMonthStr = `${bulanIndo[dateNow.getMonth()]} ${dateNow.getFullYear()}`;
+
+        bulanIndo.forEach((b) => {
+          const opt = document.createElement("option");
+          const valStr = `${b} ${dateNow.getFullYear()}`;
+          opt.value = valStr;
+          opt.textContent = valStr;
+          if (valStr === currentMonthStr) opt.selected = true; // Default bulan ini
+          selBulan.appendChild(opt);
+        });
+        grpBulan.appendChild(lblBulan);
+        grpBulan.appendChild(selBulan);
+        body.appendChild(grpBulan);
+
+        // 3. Field Nominal (Dengan formatting Rupiah)
+        const grpNominal = document.createElement("div");
+        grpNominal.className = "form-group";
+        const lblNominal = document.createElement("label");
+        lblNominal.textContent = "Nominal Pembayaran (Rp)";
+        const inpNominal = document.createElement("input");
+        inpNominal.className = "form-control";
+        inpNominal.type = "number";
+        inpNominal.id = "kasir_nominal";
+        inpNominal.placeholder = "Contoh: 50000";
+        inpNominal.min = "0";
+
+        grpNominal.appendChild(lblNominal);
+        grpNominal.appendChild(inpNominal);
+        body.appendChild(grpNominal);
+
+        const errorText = document.createElement("div");
+        errorText.style.color = "#ef4444";
+        errorText.style.fontSize = "0.85rem";
+        errorText.style.marginTop = "10px";
+        body.appendChild(errorText);
+
+        // Tombol Aksi
+        const btnBatal = document.createElement("button");
+        btnBatal.className = "btn-secondary";
+        btnBatal.textContent = "Batal";
+        btnBatal.onclick = () => overlay.remove();
+
+        const btnSimpan = document.createElement("button");
+        btnSimpan.className = "btn-primary";
+        btnSimpan.textContent = "Catat Transaksi";
+        btnSimpan.onclick = () => {
+          const payload = {
+            USERNAME: document.getElementById("kasir_username").value,
+            BULAN_DIBAYAR: document.getElementById("kasir_bulan").value,
+            NOMINAL: parseFloat(document.getElementById("kasir_nominal").value) || 0,
+          };
+
+          if (!payload.USERNAME) {
+            errorText.textContent = "Silakan pilih warga pembayar.";
+            return;
+          }
+          if (payload.NOMINAL <= 0) {
+            errorText.textContent = "Nominal harus lebih besar dari 0.";
+            return;
+          }
+
+          btnSimpan.textContent = "Mencatat...";
+          btnSimpan.disabled = true;
+          errorText.textContent = "";
+
+          google.script.run
+            .withSuccessHandler((msg) => {
+              overlay.remove();
+              showToast(msg, "success");
+              loadTransaksiTable(tableContainer); // Refresh tabel keuangan otomatis
+            })
+            .withFailureHandler((err) => {
+              btnSimpan.textContent = "Catat Transaksi";
+              btnSimpan.disabled = false;
+              errorText.textContent = err.message;
+            })
+            .createTransaksi(UI_STATE.user, payload);
+        };
+
+        footer.appendChild(btnBatal);
+        footer.appendChild(btnSimpan);
+      })
+      .withFailureHandler((err) => {
+        body.innerHTML = `<div class="loading-text" style="color:red;">Gagal memuat data warga: ${err.message}</div>`;
+      })
+      .getAllWarga(UI_STATE.user);
+  }
+
   function loadTransaksiTable(container) {
-    container.innerHTML = '<div class="loading-text">Menarik riwayat transaksi dari DB_TRANSAKSI...</div>';
+    container.innerHTML = '<div class="loading-text">Menarik riwayat transaksi dan memetakan wilayah...</div>';
 
     google.script.run
       .withSuccessHandler((dataTrx) => {
         container.innerHTML = "";
 
-        // VARIABEL STATE PAGINASI CLIENT-SIDE
+        // Banner Notifikasi untuk KORLAP GANG
+        let infoMapping = "";
+        if (UI_STATE.user.role === "KORLAP_GANG") {
+          const gangPrefix = UI_STATE.user.blokRumah.split("/")[0];
+          infoMapping = `<div style="padding: 10px 15px; background: #eff6ff; color: #1d4ed8; border-radius: 8px; margin-bottom: 15px; font-weight: 600; font-size: 0.9rem; border-left: 4px solid #2563eb;">📍 Laporan Terisolasi: Menampilkan pemasukan kas khusus wilayah ${gangPrefix}</div>`;
+        }
+        if (infoMapping) container.innerHTML += infoMapping;
+
+        // VARIABEL STATE PAGINASI
         let currentPage = 1;
         let rowsPerPage = 10;
-        let currentFilteredData = dataTrx; // Default seluruh data
+        let currentFilteredData = dataTrx;
 
         const uniqueBulan = [...new Set(dataTrx.map((item) => item.BULAN_DIBAYAR))];
-        const uniquePetugas = [...new Set(dataTrx.map((item) => item.PETUGAS))];
+        const uniqueBlok = [...new Set(dataTrx.map((item) => item.BLOK_RUMAH.split("/")[0]))];
 
-        // TOOLBAR
+        // TOOLBAR PENCARIAN & FILTER
         const toolbar = document.createElement("div");
         toolbar.className = "table-toolbar";
+
         const searchInput = document.createElement("input");
         searchInput.type = "text";
         searchInput.className = "form-control toolbar-search";
-        searchInput.placeholder = "Cari ID Transaksi atau Username...";
+        searchInput.placeholder = "Cari Nama Warga atau ID Transaksi...";
+
         const filterBulan = document.createElement("select");
         filterBulan.className = "form-control toolbar-filter";
         filterBulan.innerHTML = `<option value="ALL">Semua Bulan</option>` + uniqueBulan.map((b) => `<option value="${b}">${b}</option>`).join("");
-        const filterPetugas = document.createElement("select");
-        filterPetugas.className = "form-control toolbar-filter";
-        filterPetugas.innerHTML = `<option value="ALL">Semua Petugas</option>` + uniquePetugas.map((p) => `<option value="${p}">${p}</option>`).join("");
+
+        const filterBlok = document.createElement("select");
+        filterBlok.className = "form-control toolbar-filter";
+        filterBlok.innerHTML = `<option value="ALL">Semua Wilayah/Blok</option>` + uniqueBlok.map((b) => `<option value="${b}">${b}</option>`).join("");
 
         toolbar.appendChild(searchInput);
         toolbar.appendChild(filterBulan);
-        toolbar.appendChild(filterPetugas);
+        toolbar.appendChild(filterBlok);
         container.appendChild(toolbar);
 
         // KERANGKA TABEL
@@ -716,7 +899,9 @@
         table.className = "enterprise-table";
         const thead = document.createElement("thead");
         const trHead = document.createElement("tr");
-        ["WAKTU (TIMESTAMP)", "ID TRANSAKSI", "USERNAME", "BULAN DIBAYAR", "PETUGAS", "NOMINAL"].forEach((t) => {
+
+        // Kolom Diperbarui (Lebih Informatif)
+        ["WAKTU", "ID TRANSAKSI", "BLOK", "NAMA WARGA", "BULAN", "KASIR", "NOMINAL"].forEach((t) => {
           const th = document.createElement("th");
           th.textContent = t;
           trHead.appendChild(th);
@@ -734,7 +919,6 @@
         const pageInfo = document.createElement("div");
         const pageControls = document.createElement("div");
         pageControls.className = "pagination-controls";
-
         const limitSelect = document.createElement("select");
         limitSelect.className = "form-control";
         limitSelect.style.width = "auto";
@@ -745,7 +929,6 @@
           opt.textContent = `${val} Baris`;
           limitSelect.appendChild(opt);
         });
-
         const btnPrev = document.createElement("button");
         btnPrev.className = "btn-page";
         btnPrev.textContent = "Sebelumnya";
@@ -761,13 +944,12 @@
         wrap.appendChild(paginationBar);
         container.appendChild(wrap);
 
-        // RENDER BARIS & PAGINASI
+        // RENDER BARIS & KALKULASI TOTAL KAS
         function renderRows() {
           tbody.innerHTML = "";
-
-          // PENTING: Total Kas selalu dihitung dari seluruh data terfilter (currentFilteredData), BUKAN hanya data per halaman (pageData).
           let totalSaldo = 0;
           currentFilteredData.forEach((trx) => (totalSaldo += parseFloat(trx.NOMINAL || 0)));
+
           const saldoElement = document.getElementById("saldoTotal");
           if (saldoElement) saldoElement.textContent = "Rp " + totalSaldo.toLocaleString("id-ID");
 
@@ -775,7 +957,6 @@
           const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
           if (currentPage > totalPages) currentPage = totalPages;
           if (currentPage < 1) currentPage = 1;
-
           const startIndex = (currentPage - 1) * rowsPerPage;
           const endIndex = startIndex + rowsPerPage;
           const pageData = currentFilteredData.slice(startIndex, endIndex);
@@ -785,43 +966,54 @@
           btnNext.disabled = currentPage === totalPages || totalRows === 0;
 
           if (totalRows === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #64748b;">Tidak ada transaksi ditemukan.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: #64748b;">Tidak ada transaksi ditemukan.</td></tr>';
             return;
           }
 
           pageData.forEach((trx) => {
             const tr = document.createElement("tr");
+
             const tdTime = document.createElement("td");
             tdTime.textContent = trx.TIMESTAMP;
             tdTime.style.color = "#64748b";
             tdTime.style.fontSize = "0.85rem";
             tr.appendChild(tdTime);
+
             const tdId = document.createElement("td");
             tdId.textContent = trx.ID_TRANSAKSI;
             tdId.style.fontWeight = "700";
             tr.appendChild(tdId);
-            const tdUser = document.createElement("td");
-            tdUser.textContent = trx.USERNAME;
-            tr.appendChild(tdUser);
+
+            const tdBlok = document.createElement("td");
+            tdBlok.textContent = trx.BLOK_RUMAH;
+            tr.appendChild(tdBlok);
+
+            const tdNama = document.createElement("td");
+            tdNama.textContent = trx.NAMA_WARGA;
+            tdNama.style.fontWeight = "600";
+            tr.appendChild(tdNama);
+
             const tdBulan = document.createElement("td");
             const badgeBulan = document.createElement("span");
             badgeBulan.className = "badge badge-pengurus";
             badgeBulan.textContent = trx.BULAN_DIBAYAR;
             tdBulan.appendChild(badgeBulan);
             tr.appendChild(tdBulan);
+
             const tdPetugas = document.createElement("td");
             tdPetugas.textContent = trx.PETUGAS;
             tr.appendChild(tdPetugas);
+
             const tdNominal = document.createElement("td");
             tdNominal.textContent = "Rp " + parseFloat(trx.NOMINAL).toLocaleString("id-ID");
-            tdNominal.style.fontWeight = "700";
+            tdNominal.style.fontWeight = "800";
             tdNominal.style.color = "#10b981";
             tr.appendChild(tdNominal);
+
             tbody.appendChild(tr);
           });
         }
 
-        // EVENT LISTENERS PAGINASI
         btnPrev.addEventListener("click", () => {
           if (currentPage > 1) {
             currentPage--;
@@ -845,12 +1037,13 @@
         function applyFilters() {
           const keyword = searchInput.value.toLowerCase();
           const selBulan = filterBulan.value;
-          const selPetugas = filterPetugas.value;
+          const selBlok = filterBlok.value;
+
           currentFilteredData = dataTrx.filter((trx) => {
-            const textMatch = trx.ID_TRANSAKSI.toLowerCase().includes(keyword) || trx.USERNAME.toLowerCase().includes(keyword);
+            const textMatch = trx.ID_TRANSAKSI.toLowerCase().includes(keyword) || trx.NAMA_WARGA.toLowerCase().includes(keyword);
             const bulanMatch = selBulan === "ALL" || trx.BULAN_DIBAYAR === selBulan;
-            const petugasMatch = selPetugas === "ALL" || trx.PETUGAS === selPetugas;
-            return textMatch && bulanMatch && petugasMatch;
+            const blokMatch = selBlok === "ALL" || trx.BLOK_RUMAH.startsWith(selBlok);
+            return textMatch && bulanMatch && blokMatch;
           });
           currentPage = 1;
           renderRows();
@@ -858,9 +1051,9 @@
 
         searchInput.addEventListener("input", applyFilters);
         filterBulan.addEventListener("change", applyFilters);
-        filterPetugas.addEventListener("change", applyFilters);
+        filterBlok.addEventListener("change", applyFilters);
 
-        renderRows(); // Render pertama
+        renderRows();
       })
       .withFailureHandler((err) => {
         container.innerHTML = `<div class="loading-text" style="color:red;">Error: ${err.message}</div>`;

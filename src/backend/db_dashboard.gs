@@ -1,47 +1,47 @@
+// File: src/backend/db_dashboard.gs
+// [LOCATOR: Ganti seluruh isi file db_dashboard.gs dengan blok ini]
+
 /**
  * ==========================================
- * S.I.W.A.R.G.A - DASHBOARD AGGREGATOR
- * Microservice untuk kalkulasi statistik Real-Time
+ * S.I.W.A.R.G.A - DASHBOARD AGGREGATOR (V3)
+ * Microservice Kalkulasi Statistik Terisolasi (Per RT)
  * ==========================================
  */
+function getDashboardSummary(userProfile) {
+  if (!userProfile || !userProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
 
-function getDashboardSummary() {
-  const MASTER_ID = "1Ko4hiHR39_vCHYXKub6FIvjcEDhHZc1UGpoOqD0AUns";
-  const TRANSAKSI_ID = "10wCY4kQn2Zhm_9udQvCm_0JTv7nzUjzXJYI0SB3FlsM";
+  const tenantSS = SpreadsheetApp.openById(userProfile.tenant_db_id);
 
-  // 1. Kalkulasi Statistik Warga
-  const dbMaster = SpreadsheetApp.openById(MASTER_ID).getSheetByName("DATA_WARGA");
-  const dataWarga = dbMaster.getDataRange().getValues().slice(1);
+  // 1. Kalkulasi Statistik Warga (Terisolasi per RT)
+  const dbPenduduk = tenantSS.getSheetByName("DATA_PENDUDUK");
+  const dataPenduduk = dbPenduduk.getDataRange().getValues().slice(1);
 
   let totalWarga = 0;
   let wargaAktif = 0;
 
-  dataWarga.forEach((row) => {
-    if (row[5] === "WARGA") {
-      // Hanya hitung Role "WARGA" (Pengurus/Admin tidak dihitung sebagai target iuran)
-      totalWarga++;
-      if (row[6] === "AKTIF") wargaAktif++;
-    }
+  dataPenduduk.forEach((row) => {
+    // Struktur DATA_PENDUDUK: [USERNAME, NAMA, NIK, BLOK, NO_HP, JABATAN, STATUS]
+    totalWarga++;
+    if (row[6] === "AKTIF") wargaAktif++;
   });
 
-  // 2. Kalkulasi Statistik Kas & Keuangan
-  const dbTrans = SpreadsheetApp.openById(TRANSAKSI_ID).getSheetByName("LOG_IURAN");
+  // 2. Kalkulasi Statistik Kas & Keuangan (Terisolasi per RT)
+  const dbTrans = tenantSS.getSheetByName("LOG_IURAN");
   const dataTrans = dbTrans.getDataRange().getValues().slice(1);
 
   let totalKas = 0;
   let kasBulanIni = 0;
 
-  // Rumus untuk mendeteksi bulan saat ini (Sesuai format Seeder: "Mei 2026")
   const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
   const dateNow = new Date();
   const strBulanIni = `${bulanIndo[dateNow.getMonth()]} ${dateNow.getFullYear()}`;
 
   dataTrans.forEach((row) => {
-    let nominal = parseFloat(row[3]) || 0; // Kolom ke-4 (Index 3) adalah NOMINAL
+    // Struktur LOG_IURAN: [ID_TRANSAKSI, TIMESTAMP, USERNAME, NOMINAL, BULAN_DIBAYAR, PETUGAS]
+    let nominal = parseFloat(row[3]) || 0;
     totalKas += nominal;
 
-    let bulanDibayar = row[4]; // Kolom ke-5 (Index 4) adalah BULAN_DIBAYAR
-    // Proteksi Date Object Google Sheets
+    let bulanDibayar = row[4];
     if (Object.prototype.toString.call(bulanDibayar) === "[object Date]") {
       bulanDibayar = `${bulanIndo[bulanDibayar.getMonth()]} ${bulanDibayar.getFullYear()}`;
     }
@@ -58,5 +58,6 @@ function getDashboardSummary() {
     totalKas: totalKas,
     kasBulanIni: kasBulanIni,
     bulanIniStr: strBulanIni,
+    infoKawasan: `RT ${userProfile.kode_rt} / RW ${userProfile.kode_rw} (${userProfile.kode_kawasan})`, // Tambahan label untuk UI
   };
 }

@@ -1,78 +1,72 @@
+// File: src/backend/db_transaksi.gs
+// [LOCATOR: Ganti seluruh isi file db_transaksi.gs dengan blok ini]
+
 /**
  * ==========================================
- * S.I.W.A.R.G.A - DB TRANSAKSI OPERATIONS
- * Microservice khusus untuk Modul Kas & Keuangan
+ * S.I.W.A.R.G.A - DB TRANSAKSI OPERATIONS (V3)
+ * Menggunakan tenant_db_id dinamis dari sesi user
  * ==========================================
  */
 
-/**
- * Mengambil SELURUH riwayat transaksi dari DB Transaksi
- * @returns {Array<Object>} Array of Transaction Objects
- */
-function getAllTransaksi() {
-  const TRANSAKSI_ID = "10wCY4kQn2Zhm_9udQvCm_0JTv7nzUjzXJYI0SB3FlsM";
-  const db = SpreadsheetApp.openById(TRANSAKSI_ID);
+/** [READ] Mengambil SELURUH riwayat transaksi dari DB Transaksi milik RT */
+function getAllTransaksi(userProfile) {
+  if (!userProfile || !userProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
+
+  const db = SpreadsheetApp.openById(userProfile.tenant_db_id);
   const sheet = db.getSheetByName("LOG_IURAN");
-
-  if (!sheet) throw new Error("CRITICAL: Sheet LOG_IURAN tidak ditemukan di DB_TRANSAKSI.");
+  if (!sheet) throw new Error("CRITICAL: Sheet LOG_IURAN tidak ditemukan di DB Tenant Anda.");
 
   const rawData = sheet.getDataRange().getValues();
   const headers = rawData[0];
   const rows = rawData.slice(1);
 
-  // Mapping ke JSON Array dengan Proteksi Tipe Data Universal (Anti-Null Serialization)
   return rows.map((row) => {
     let obj = {};
     headers.forEach((header, index) => {
       let cellValue = row[index];
       let headerName = header.toString().trim();
-
-      // DETEKSI OBJEK TANGGAL ABSOLUT:
-      // Menangkap semua tanggal terlepas dari apa nama kolomnya
       if (Object.prototype.toString.call(cellValue) === "[object Date]") {
         if (headerName === "BULAN_DIBAYAR") {
-          // Kembalikan format ke "Bulan Tahun" (misal: "Mei 2026")
           const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
           obj[headerName] = `${bulanIndo[cellValue.getMonth()]} ${cellValue.getFullYear()}`;
         } else {
-          // Format standar mesin waktu (TIMESTAMP)
           obj[headerName] = Utilities.formatDate(cellValue, "Asia/Jakarta", "yyyy-MM-dd HH:mm:ss");
         }
       } else {
-        obj[headerName] = cellValue; // Masukkan teks/angka biasa
+        obj[headerName] = cellValue;
       }
     });
     return obj;
   });
 }
 
-/**
- * [READ] Mengambil riwayat transaksi KHUSUS untuk satu warga (Self-Service)
- * @param {string} username - Username dari sesi pengguna yang sedang login
- */
-function getTransaksiByUser(username) {
-  const TRANSAKSI_ID = "10wCY4kQn2Zhm_9udQvCm_0JTv7nzUjzXJYI0SB3FlsM";
-  const db = SpreadsheetApp.openById(TRANSAKSI_ID);
-  const sheet = db.getSheetByName("LOG_IURAN");
+/** [READ] Mengambil riwayat transaksi KHUSUS untuk satu warga (Self-Service) */
+function getTransaksiByUser(userProfile, targetUsername) {
+  if (!userProfile || !userProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
 
-  if (!sheet) throw new Error("CRITICAL: Sheet LOG_IURAN tidak ditemukan di DB_TRANSAKSI.");
+  // Zero-Trust Security: Jika role WARGA, hanya boleh akses datanya sendiri.
+  let queryUsername = targetUsername || userProfile.username;
+  if (userProfile.role === "WARGA" && queryUsername !== userProfile.username) {
+    throw new Error("Sistem Menolak (Zero-Trust): Anda tidak diizinkan melihat transaksi warga lain.");
+  }
+
+  const db = SpreadsheetApp.openById(userProfile.tenant_db_id);
+  const sheet = db.getSheetByName("LOG_IURAN");
+  if (!sheet) throw new Error("CRITICAL: Sheet LOG_IURAN tidak ditemukan di DB Tenant Anda.");
 
   const rawData = sheet.getDataRange().getValues();
   const headers = rawData[0];
   const rows = rawData.slice(1);
-
   const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   let result = [];
-
   rows.forEach((row) => {
-    // Index 2 adalah USERNAME pada tabel Log Iuran
-    if (row[2].toString().trim() === username.trim()) {
+    // Index 2 adalah USERNAME pada tabel LOG_IURAN
+    if (row[2].toString().trim() === queryUsername.trim()) {
       let obj = {};
       headers.forEach((header, index) => {
         let cellValue = row[index];
         let headerName = header.toString().trim();
-
         if (Object.prototype.toString.call(cellValue) === "[object Date]") {
           if (headerName === "BULAN_DIBAYAR") obj[headerName] = `${bulanIndo[cellValue.getMonth()]} ${cellValue.getFullYear()}`;
           else obj[headerName] = Utilities.formatDate(cellValue, "Asia/Jakarta", "yyyy-MM-dd HH:mm:ss");
@@ -84,8 +78,7 @@ function getTransaksiByUser(username) {
     }
   });
 
-  // Urutkan data dari transaksi terbaru ke terlama
+  // Urutkan dari yang terbaru ke terlama
   result.sort((a, b) => new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP));
-
   return result;
 }

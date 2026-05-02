@@ -967,4 +967,30 @@ horizontal tidak sengaja */
       text-align: center !important;
     }
   }
+  /* =========================================
+       FITUR: FREEZE SCROLL / STICKY HEADER TABEL
+       ========================================= */
+  /* 1. Membatasi tinggi kontainer tabel agar memicu scroll vertikal internal */
+  .table-container {
+    max-height: 65vh !important; /* Mengambil maksimal 65% dari tinggi layar HP */
+    overflow-y: auto !important;
+    overflow-x: auto !important; /* Mempertahankan scroll horizontal */
+    -webkit-overflow-scrolling: touch; /* Efek scroll yang lebih mulus di iOS */
+    border-radius: 8px; /* Sudut membulat untuk estetika premium */
+  }
+
+  /* 2. Mengunci baris judul tabel */
+  .table-container th {
+    position: -webkit-sticky !important; /* Dukungan untuk browser Safari iOS */
+    position: sticky !important;
+    top: 0 !important;
+
+    /* Variabel penyesuaian: Ubah #ffffff dengan warna background tema Anda jika bukan putih */
+    background-color: #ffffff !important;
+
+    z-index: 10 !important; /* Menjaga posisi header di atas baris data (td) */
+
+    /* Bayangan halus di bawah header saat tabel di-scroll (UI/UX Enterprise) */
+    box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  }
 </style>

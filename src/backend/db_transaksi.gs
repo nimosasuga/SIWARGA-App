@@ -206,3 +206,30 @@ function submitBuktiTransfer(userProfile, payload) {
 
   return "Bukti pembayaran berhasil dikirim. Menunggu validasi dari Bendahara/RT.";
 }
+
+/**
+ * [UPDATE] Validasi Pembayaran: Mengubah status 'MENUNGGU' menjadi 'LUNAS'
+ */
+function approvePembayaran(adminProfile, idTransaksi) {
+  if (!adminProfile || !adminProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
+
+  // Hanya Bendahara, RT, dan Super Admin yang boleh melakukan ACC
+  const allowed = ["SUPER_ADMIN", "KETUA_RT", "BENDAHARA"];
+  if (!allowed.includes(adminProfile.role)) throw new Error("Anda tidak memiliki otoritas untuk memvalidasi pembayaran.");
+
+  const db = SpreadsheetApp.openById(adminProfile.tenant_db_id);
+  const sheetLog = db.getSheetByName("LOG_IURAN");
+  const data = sheetLog.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    // Mencocokkan ID Transaksi di Kolom A (Index 0)
+    if (data[i][0] === idTransaksi) {
+      // Update Kolom PETUGAS (Index 5) dan STATUS (Index 6)
+      // Kolom 6 = PETUGAS, Kolom 7 = STATUS
+      sheetLog.getRange(i + 1, 6).setValue(adminProfile.username);
+      sheetLog.getRange(i + 1, 7).setValue("LUNAS");
+      return `Transaksi ${idTransaksi} telah divalidasi dan dinyatakan LUNAS.`;
+    }
+  }
+  throw new Error("ID Transaksi tidak ditemukan.");
+}

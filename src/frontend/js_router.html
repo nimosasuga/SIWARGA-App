@@ -972,44 +972,55 @@
 
           pageData.forEach((trx) => {
             const tr = document.createElement("tr");
+            const statusTrx = trx.STATUS || "LUNAS";
+            const urlBukti = trx.BUKTI_URL || "-";
 
-            const tdTime = document.createElement("td");
-            tdTime.textContent = trx.TIMESTAMP;
-            tdTime.style.color = "#64748b";
-            tdTime.style.fontSize = "0.85rem";
-            tr.appendChild(tdTime);
+            // ... (Kolom WAKTU, ID, BLOK, NAMA, BULAN tetap seperti sebelumnya)
+            tr.innerHTML = `
+    <td style="color:#64748b; font-size:0.85rem;">${trx.TIMESTAMP}</td>
+    <td style="font-weight:700;">${trx.ID_TRANSAKSI}</td>
+    <td>${trx.BLOK_RUMAH}</td>
+    <td style="font-weight:600;">${trx.NAMA_WARGA}</td>
+    <td><span class="badge badge-pengurus">${trx.BULAN_DIBAYAR}</span></td>
+    <td>${trx.PETUGAS}</td>
+    <td style="font-weight:800; color:#10b981;">Rp ${parseFloat(trx.NOMINAL).toLocaleString("id-ID")}</td>
+  `;
 
-            const tdId = document.createElement("td");
-            tdId.textContent = trx.ID_TRANSAKSI;
-            tdId.style.fontWeight = "700";
-            tr.appendChild(tdId);
+            // KOLOM STATUS & AKSI (DINAMIS)
+            const tdStatusAksi = document.createElement("td");
 
-            const tdBlok = document.createElement("td");
-            tdBlok.textContent = trx.BLOK_RUMAH;
-            tr.appendChild(tdBlok);
+            if (statusTrx === "MENUNGGU VALIDASI") {
+              // Tombol Konfirmasi yang memanggil Modal Pintar
+              const btnKonfirmasi = document.createElement("button");
+              btnKonfirmasi.className = "btn-primary";
+              btnKonfirmasi.style.padding = "6px 10px";
+              btnKonfirmasi.style.fontSize = "0.75rem";
+              btnKonfirmasi.style.backgroundColor = "#f59e0b"; // Warna Amber/Kuning Peringatan
+              btnKonfirmasi.textContent = "KONFIRMASI";
+              btnKonfirmasi.onclick = () => openValidasiModal(trx, container);
 
-            const tdNama = document.createElement("td");
-            tdNama.textContent = trx.NAMA_WARGA;
-            tdNama.style.fontWeight = "600";
-            tr.appendChild(tdNama);
+              tdStatusAksi.appendChild(btnKonfirmasi);
+            } else {
+              // Jika sudah lunas, tampilkan Badge Hijau
+              const badge = document.createElement("span");
+              badge.className = "badge badge-aktif";
+              badge.textContent = "LUNAS";
+              tdStatusAksi.appendChild(badge);
 
-            const tdBulan = document.createElement("td");
-            const badgeBulan = document.createElement("span");
-            badgeBulan.className = "badge badge-pengurus";
-            badgeBulan.textContent = trx.BULAN_DIBAYAR;
-            tdBulan.appendChild(badgeBulan);
-            tr.appendChild(tdBulan);
+              // Tetap sediakan link untuk melihat arsip bukti (jika ada) setelah lunas
+              if (urlBukti && urlBukti !== "-") {
+                const btnView = document.createElement("a");
+                btnView.href = urlBukti;
+                btnView.target = "_blank";
+                btnView.textContent = " 📄 Arsip";
+                btnView.style.marginLeft = "10px";
+                btnView.style.fontSize = "0.75rem";
+                btnView.style.textDecoration = "none";
+                tdStatusAksi.appendChild(btnView);
+              }
+            }
 
-            const tdPetugas = document.createElement("td");
-            tdPetugas.textContent = trx.PETUGAS;
-            tr.appendChild(tdPetugas);
-
-            const tdNominal = document.createElement("td");
-            tdNominal.textContent = "Rp " + parseFloat(trx.NOMINAL).toLocaleString("id-ID");
-            tdNominal.style.fontWeight = "800";
-            tdNominal.style.color = "#10b981";
-            tr.appendChild(tdNominal);
-
+            tr.appendChild(tdStatusAksi);
             tbody.appendChild(tr);
           });
         }
@@ -1908,5 +1919,136 @@
 
     card.appendChild(btnSave);
     container.appendChild(card);
+  }
+
+  /**
+   * ==========================================
+   * MODAL: VALIDASI PEMBAYARAN IURAN BENDAHARA
+   * Menampilkan data warga beserta preview bukti transfer
+   * ==========================================
+   */
+  function openValidasiModal(trx, tableContainer) {
+    const oldModal = document.getElementById("crudModal");
+    if (oldModal) oldModal.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.id = "crudModal";
+
+    const box = document.createElement("div");
+    box.className = "modal-box";
+    box.style.maxWidth = "600px"; // Diperlebar agar gambar terlihat jelas
+
+    const header = document.createElement("div");
+    header.className = "modal-header";
+    header.textContent = "Validasi Pembayaran Iuran";
+
+    const btnClose = document.createElement("button");
+    btnClose.innerHTML = "&times;";
+    btnClose.style.background = "none";
+    btnClose.style.border = "none";
+    btnClose.style.fontSize = "1.5rem";
+    btnClose.style.cursor = "pointer";
+    btnClose.onclick = () => overlay.remove();
+    header.appendChild(btnClose);
+
+    const body = document.createElement("div");
+    body.className = "modal-body";
+
+    // 1. Panel Informasi Warga & Tagihan
+    const infoDiv = document.createElement("div");
+    infoDiv.style.background = "#f8fafc";
+    infoDiv.style.padding = "15px";
+    infoDiv.style.borderRadius = "8px";
+    infoDiv.style.border = "1px solid #e2e8f0";
+    infoDiv.style.marginBottom = "15px";
+    infoDiv.innerHTML = `
+      <table style="width: 100%; font-size: 0.9rem; border-collapse: collapse;">
+        <tr><td style="color:#64748b; padding:4px 0; width:120px;">ID Transaksi</td><td style="font-weight:700;">: ${trx.ID_TRANSAKSI}</td></tr>
+        <tr><td style="color:#64748b; padding:4px 0;">Nama Warga</td><td style="font-weight:700;">: ${trx.NAMA_WARGA} (${trx.BLOK_RUMAH})</td></tr>
+        <tr><td style="color:#64748b; padding:4px 0;">Bulan Tagihan</td><td style="font-weight:700;">: <span class="badge badge-pengurus">${trx.BULAN_DIBAYAR}</span></td></tr>
+        <tr><td style="color:#64748b; padding:4px 0;">Nominal</td><td style="font-weight:800; color:#10b981; font-size: 1.1rem;">: Rp ${parseFloat(trx.NOMINAL).toLocaleString("id-ID")}</td></tr>
+      </table>
+    `;
+    body.appendChild(infoDiv);
+
+    // 2. Panel Pratinjau Gambar (Iframe Embed)
+    const imgLabel = document.createElement("div");
+    imgLabel.textContent = "Bukti Transfer / Unggahan Warga:";
+    imgLabel.style.fontWeight = "600";
+    imgLabel.style.marginBottom = "8px";
+    imgLabel.style.fontSize = "0.9rem";
+    body.appendChild(imgLabel);
+
+    const previewContainer = document.createElement("div");
+    previewContainer.style.width = "100%";
+    previewContainer.style.height = "320px";
+    previewContainer.style.background = "#e2e8f0";
+    previewContainer.style.borderRadius = "8px";
+    previewContainer.style.overflow = "hidden";
+    previewContainer.style.display = "flex";
+    previewContainer.style.alignItems = "center";
+    previewContainer.style.justifyContent = "center";
+    previewContainer.style.border = "1px solid #cbd5e1";
+
+    if (trx.BUKTI_URL && trx.BUKTI_URL !== "-") {
+      // Trik Google Drive: Mengubah link /view menjadi /preview agar bisa di-embed di Iframe
+      let previewUrl = trx.BUKTI_URL;
+      if (previewUrl.includes("/view")) {
+        previewUrl = previewUrl.replace("/view", "/preview");
+      }
+
+      const iframe = document.createElement("iframe");
+      iframe.src = previewUrl;
+      iframe.style.width = "100%";
+      iframe.style.height = "100%";
+      iframe.style.border = "none";
+      previewContainer.appendChild(iframe);
+    } else {
+      previewContainer.innerHTML = `<span style="color:#64748b; font-style:italic;">Tidak ada berkas bukti yang dilampirkan.</span>`;
+    }
+    body.appendChild(previewContainer);
+
+    // 3. Tombol Aksi (Footer)
+    const footer = document.createElement("div");
+    footer.className = "modal-footer";
+
+    const btnBatal = document.createElement("button");
+    btnBatal.className = "btn-secondary";
+    btnBatal.textContent = "Tutup / Batal";
+    btnBatal.onclick = () => overlay.remove();
+
+    const btnSimpan = document.createElement("button");
+    btnSimpan.className = "btn-primary";
+    btnSimpan.textContent = "✓ LUNAS DAN VALID";
+    btnSimpan.style.backgroundColor = "#10b981"; // Hijau Konfirmasi
+
+    btnSimpan.onclick = () => {
+      btnSimpan.textContent = "Memproses...";
+      btnSimpan.disabled = true;
+
+      google.script.run
+        .withSuccessHandler((msg) => {
+          overlay.remove();
+          showToast(msg, "success");
+          loadTransaksiTable(tableContainer); // Refresh UI langsung
+        })
+        .withFailureHandler((err) => {
+          btnSimpan.textContent = "✓ LUNAS DAN VALID";
+          btnSimpan.disabled = false;
+          showToast("Gagal Validasi: " + err.message, "error");
+        })
+        .approvePembayaran(UI_STATE.user, trx.ID_TRANSAKSI);
+    };
+
+    footer.appendChild(btnBatal);
+    footer.appendChild(btnSimpan);
+    box.appendChild(header);
+    box.appendChild(body);
+    box.appendChild(footer);
+    overlay.appendChild(box);
+
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.classList.add("show"), 10);
   }
 </script>

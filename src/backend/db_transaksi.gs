@@ -157,3 +157,52 @@ function createTransaksi(adminProfile, data) {
 
   return `Transaksi ${idTrx} berhasil dicatat dan masuk ke saldo Kas.`;
 }
+
+/**
+ * [CREATE] Self-Service Warga: Mengunggah Bukti Transfer ke Google Drive
+ */
+function submitBuktiTransfer(userProfile, payload) {
+  if (!userProfile || !userProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
+
+  let fileUrl = "-";
+
+  // 1. Integrasi Google Drive (Menyimpan Base64 menjadi File Gambar)
+  if (payload.base64File) {
+    let folderIter = DriveApp.getFoldersByName("SIWARGA_BUKTI_TRANSFER");
+    let folder;
+    if (folderIter.hasNext()) {
+      folder = folderIter.next();
+    } else {
+      folder = DriveApp.createFolder("SIWARGA_BUKTI_TRANSFER");
+      folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); // Agar bisa dilihat RT/Bendahara
+    }
+
+    const contentType = payload.base64File.split(",")[0].split(":")[1].split(";")[0];
+    const base64Data = payload.base64File.split(",")[1];
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), contentType, payload.fileName);
+    const file = folder.createFile(blob);
+    fileUrl = file.getUrl();
+  }
+
+  // 2. Tulis ke Brankas Tenant dengan 2 Kolom Tambahan (STATUS & BUKTI_URL)
+  const db = SpreadsheetApp.openById(userProfile.tenant_db_id);
+  const sheetLog = db.getSheetByName("LOG_IURAN");
+
+  const timestamp = new Date();
+  const timeString = Utilities.formatDate(timestamp, "Asia/Jakarta", "yyMMddHHmmss");
+  const idTrx = `TRX-WEB-${timeString}`; // Kode khusus transaksi Self-Service
+
+  // Struktur Tabel Diekspansi: [ID, WAKTU, USERNAME, NOMINAL, BULAN, PETUGAS, STATUS, BUKTI_URL]
+  sheetLog.appendRow([
+    idTrx,
+    timestamp,
+    userProfile.username,
+    payload.NOMINAL,
+    payload.BULAN_DIBAYAR,
+    "Self-Service (Warga)",
+    "MENUNGGU VALIDASI", // Kolom Index 6
+    fileUrl, // Kolom Index 7
+  ]);
+
+  return "Bukti pembayaran berhasil dikirim. Menunggu validasi dari Bendahara/RT.";
+}

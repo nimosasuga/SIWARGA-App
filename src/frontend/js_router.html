@@ -1076,11 +1076,6 @@
     container.appendChild(text);
   }
 
-  /**
-   * ==========================================
-   * VIEW: IURAN SAYA (SELF-SERVICE WARGA)
-   * ==========================================
-   */
   function renderViewIuranSaya(container) {
     const headerDiv = document.createElement("div");
     headerDiv.style.display = "flex";
@@ -1092,10 +1087,19 @@
     title.textContent = "Riwayat Iuran Saya";
     title.style.color = "#0f172a";
 
+    const tableContainer = document.createElement("div");
+
+    // Tombol Bayar Iuran (Self-Service)
+    const btnBayar = document.createElement("button");
+    btnBayar.className = "btn-primary";
+    btnBayar.textContent = "+ Konfirmasi Pembayaran";
+    btnBayar.onclick = () => openBayarIuranModal(tableContainer);
+
     headerDiv.appendChild(title);
+    headerDiv.appendChild(btnBayar);
     container.appendChild(headerDiv);
 
-    // Card Ringkasan Personal (Berwarna Biru Korporat)
+    // Card Ringkasan Personal
     const summaryContainer = document.createElement("div");
     summaryContainer.style.display = "flex";
     summaryContainer.style.gap = "20px";
@@ -1105,21 +1109,287 @@
     const myKasCard = document.createElement("div");
     myKasCard.style.flex = "1";
     myKasCard.style.minWidth = "250px";
-    myKasCard.style.background = "linear-gradient(135deg, #3b82f6, #1d4ed8)"; // Biru Premium
+    myKasCard.style.background = "linear-gradient(135deg, #3b82f6, #1d4ed8)";
     myKasCard.style.color = "white";
     myKasCard.style.padding = "25px";
     myKasCard.style.borderRadius = "12px";
     myKasCard.style.boxShadow = "0 10px 15px -3px rgba(37, 99, 235, 0.3)";
-    myKasCard.innerHTML = `<h3 style="font-size:0.9rem; margin-bottom:10px; font-weight:600; opacity:0.9;">Total Iuran Anda Terbayar</h3><div id="mySaldoTotal" style="font-size:2rem; font-weight:800;">Menghitung...</div>`;
+    myKasCard.innerHTML = `<h3 style="font-size:0.9rem; margin-bottom:10px; font-weight:600; opacity:0.9;">Total Iuran Lunas Anda</h3><div id="mySaldoTotal" style="font-size:2rem; font-weight:800;">Menghitung...</div>`;
 
     summaryContainer.appendChild(myKasCard);
     container.appendChild(summaryContainer);
-
-    const tableContainer = document.createElement("div");
     container.appendChild(tableContainer);
 
-    // Lempar username dari sesi keamanan UI_STATE ke Backend
     loadIuranSayaTable(tableContainer, UI_STATE.user.username);
+  }
+
+  // FUNGSI MODAL UPLOAD BUKTI PEMBAYARAN
+  function openBayarIuranModal(tableContainer) {
+    const oldModal = document.getElementById("crudModal");
+    if (oldModal) oldModal.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    overlay.id = "crudModal";
+
+    const box = document.createElement("div");
+    box.className = "modal-box";
+
+    const header = document.createElement("div");
+    header.className = "modal-header";
+    header.textContent = "Form Konfirmasi Pembayaran";
+
+    const btnClose = document.createElement("button");
+    btnClose.innerHTML = "&times;";
+    btnClose.style.background = "none";
+    btnClose.style.border = "none";
+    btnClose.style.fontSize = "1.5rem";
+    btnClose.style.cursor = "pointer";
+    btnClose.onclick = () => overlay.remove();
+    header.appendChild(btnClose);
+
+    const body = document.createElement("div");
+    body.className = "modal-body";
+
+    // UI Kotak Informasi Rekening
+    const bankInfo = document.createElement("div");
+    bankInfo.innerHTML = `
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;">
+        <p style="margin:0 0 5px 0; font-size:0.85rem; color:#64748b; font-weight:600;">Transfer Pembayaran ke Rekening Kas RT:</p>
+        <p style="margin:0 0 5px 0; font-size:1.35rem; font-weight:800; color:#0f172a; letter-spacing: 1px;">BCA - 1234 5678 90</p>
+        <p style="margin:0; font-size:0.85rem; font-weight:600; color:#2563eb;">a.n. BENDAHARA S.I.W.A.R.G.A</p>
+      </div>
+    `;
+    body.appendChild(bankInfo);
+
+    function createFormGroup(labelTxt, inputEl) {
+      const grp = document.createElement("div");
+      grp.className = "form-group";
+      const lbl = document.createElement("label");
+      lbl.textContent = labelTxt;
+      grp.appendChild(lbl);
+      grp.appendChild(inputEl);
+      return grp;
+    }
+
+    // Input Bulan Tagihan
+    const selBulan = document.createElement("select");
+    selBulan.className = "form-control";
+    selBulan.id = "up_bulan";
+    const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const dateNow = new Date();
+    const currentMonthStr = `${bulanIndo[dateNow.getMonth()]} ${dateNow.getFullYear()}`;
+    bulanIndo.forEach((b) => {
+      const opt = document.createElement("option");
+      opt.value = `${b} ${dateNow.getFullYear()}`;
+      opt.textContent = `${b} ${dateNow.getFullYear()}`;
+      if (opt.value === currentMonthStr) opt.selected = true;
+      selBulan.appendChild(opt);
+    });
+    body.appendChild(createFormGroup("Pembayaran Untuk Bulan", selBulan));
+
+    // Input Nominal
+    const inpNominal = document.createElement("input");
+    inpNominal.className = "form-control";
+    inpNominal.type = "number";
+    inpNominal.id = "up_nominal";
+    inpNominal.placeholder = "Contoh: 50000";
+    body.appendChild(createFormGroup("Nominal Transfer (Rp)", inpNominal));
+
+    // Input File Upload
+    const inpFile = document.createElement("input");
+    inpFile.className = "form-control";
+    inpFile.type = "file";
+    inpFile.id = "up_file";
+    inpFile.accept = "image/png, image/jpeg, image/jpg, application/pdf";
+    inpFile.style.padding = "0.5rem";
+    body.appendChild(createFormGroup("Upload Bukti Transfer", inpFile));
+
+    const errorText = document.createElement("div");
+    errorText.style.color = "#ef4444";
+    errorText.style.fontSize = "0.85rem";
+    errorText.style.marginTop = "10px";
+    body.appendChild(errorText);
+
+    const footer = document.createElement("div");
+    footer.className = "modal-footer";
+
+    const btnBatal = document.createElement("button");
+    btnBatal.className = "btn-secondary";
+    btnBatal.textContent = "Batal";
+    btnBatal.onclick = () => overlay.remove();
+
+    const btnSimpan = document.createElement("button");
+    btnSimpan.className = "btn-primary";
+    btnSimpan.textContent = "Kirim Bukti Pembayaran";
+
+    // Logika Pengubahan Gambar menjadi Base64
+    btnSimpan.onclick = () => {
+      const nominal = parseFloat(inpNominal.value);
+      const bulan = selBulan.value;
+      const file = inpFile.files[0];
+
+      if (!nominal || nominal <= 0) {
+        errorText.textContent = "Nominal harus diisi dan valid.";
+        return;
+      }
+      if (!file) {
+        errorText.textContent = "Wajib mengunggah bukti transfer.";
+        return;
+      }
+
+      // Batasi ukuran file (Max 2MB) untuk stabilitas server
+      if (file.size > 2 * 1024 * 1024) {
+        errorText.textContent = "Ukuran file terlalu besar. Maksimal 2 MB.";
+        return;
+      }
+
+      btnSimpan.textContent = "Mengunggah...";
+      btnSimpan.disabled = true;
+      errorText.textContent = "";
+
+      const reader = new FileReader();
+      reader.onloadend = function () {
+        const payload = {
+          NOMINAL: nominal,
+          BULAN_DIBAYAR: bulan,
+          base64File: reader.result,
+          fileName: file.name,
+        };
+
+        google.script.run
+          .withSuccessHandler((msg) => {
+            overlay.remove();
+            showToast(msg, "success");
+            loadIuranSayaTable(tableContainer, UI_STATE.user.username);
+          })
+          .withFailureHandler((err) => {
+            btnSimpan.textContent = "Kirim Bukti Pembayaran";
+            btnSimpan.disabled = false;
+            errorText.textContent = err.message;
+          })
+          .submitBuktiTransfer(UI_STATE.user, payload);
+      };
+      reader.readAsDataURL(file); // Konversi gambar!
+    };
+
+    footer.appendChild(btnBatal);
+    footer.appendChild(btnSimpan);
+    box.appendChild(header);
+    box.appendChild(body);
+    box.appendChild(footer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.classList.add("show"), 10);
+  }
+
+  function loadIuranSayaTable(container, username) {
+    container.innerHTML = '<div class="loading-text">Menarik riwayat iuran personal Anda...</div>';
+    google.script.run
+      .withSuccessHandler((dataTrx) => {
+        container.innerHTML = "";
+
+        const wrap = document.createElement("div");
+        wrap.className = "table-container";
+        const scroll = document.createElement("div");
+        scroll.className = "table-wrapper";
+        const table = document.createElement("table");
+        table.className = "enterprise-table";
+        const thead = document.createElement("thead");
+        const trHead = document.createElement("tr");
+
+        // Kolom Baru Ditambahkan (STATUS & BUKTI)
+        ["WAKTU BAYAR", "BULAN TAGIHAN", "NOMINAL", "STATUS", "BUKTI"].forEach((t) => {
+          const th = document.createElement("th");
+          th.textContent = t;
+          trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        table.appendChild(tbody);
+        scroll.appendChild(table);
+        wrap.appendChild(scroll);
+        container.appendChild(wrap);
+
+        let totalSaldoLunas = 0;
+
+        if (dataTrx.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: #64748b;">Belum ada riwayat pembayaran yang tercatat.</td></tr>';
+        } else {
+          dataTrx.forEach((trx) => {
+            // Membaca kolom ke-7 (Status) dan ke-8 (Bukti URL) jika ada.
+            // Fitur ini juga kompatibel mundur (Backward-compatible) dengan data lama.
+            const statusTrx = trx.STATUS || "LUNAS";
+            const urlBukti = trx.BUKTI_URL || "";
+
+            // Saldo di Kartu Biru hanya bertambah jika statusnya sudah LUNAS!
+            if (statusTrx === "LUNAS") {
+              totalSaldoLunas += parseFloat(trx.NOMINAL || 0);
+            }
+
+            const tr = document.createElement("tr");
+
+            const tdTime = document.createElement("td");
+            tdTime.textContent = trx.TIMESTAMP;
+            tdTime.style.color = "#64748b";
+            tdTime.style.fontSize = "0.85rem";
+            tr.appendChild(tdTime);
+
+            const tdBulan = document.createElement("td");
+            const badgeBulan = document.createElement("span");
+            badgeBulan.className = "badge badge-aktif";
+            badgeBulan.textContent = trx.BULAN_DIBAYAR;
+            tdBulan.appendChild(badgeBulan);
+            tr.appendChild(tdBulan);
+
+            const tdNominal = document.createElement("td");
+            tdNominal.textContent = "Rp " + parseFloat(trx.NOMINAL).toLocaleString("id-ID");
+            tdNominal.style.fontWeight = "700";
+            tdNominal.style.color = "#2563eb";
+            tr.appendChild(tdNominal);
+
+            const tdStatus = document.createElement("td");
+            const badgeStatus = document.createElement("span");
+            badgeStatus.className = "badge";
+            if (statusTrx === "MENUNGGU VALIDASI") {
+              badgeStatus.classList.add("badge-admin"); // Warna merah/kuning peringatan
+              badgeStatus.textContent = "⏳ MENUNGGU";
+            } else {
+              badgeStatus.classList.add("badge-aktif"); // Warna hijau
+              badgeStatus.textContent = "✅ LUNAS";
+            }
+            tdStatus.appendChild(badgeStatus);
+            tr.appendChild(tdStatus);
+
+            const tdBukti = document.createElement("td");
+            if (urlBukti && urlBukti !== "-") {
+              const link = document.createElement("a");
+              link.href = urlBukti;
+              link.target = "_blank";
+              link.textContent = "Lihat Bukti";
+              link.style.color = "#2563eb";
+              link.style.textDecoration = "none";
+              link.style.fontWeight = "600";
+              tdBukti.appendChild(link);
+            } else {
+              tdBukti.textContent = "Kasir Langsung";
+              tdBukti.style.color = "#94a3b8";
+              tdBukti.style.fontSize = "0.85rem";
+            }
+            tr.appendChild(tdBukti);
+
+            tbody.appendChild(tr);
+          });
+        }
+
+        const saldoElement = document.getElementById("mySaldoTotal");
+        if (saldoElement) saldoElement.textContent = "Rp " + totalSaldoLunas.toLocaleString("id-ID");
+      })
+      .withFailureHandler((err) => {
+        container.innerHTML = `<div class="loading-text" style="color:red;">Error Akses Data: ${err.message}</div>`;
+      })
+      .getTransaksiByUser(UI_STATE.user, username);
   }
 
   function loadIuranSayaTable(container, username) {

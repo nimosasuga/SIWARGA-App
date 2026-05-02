@@ -290,7 +290,7 @@
             badgeRole.className = "badge";
             badgeRole.textContent = warga.ROLE;
             if (["SUPER_ADMIN", "KETUA_RT"].includes(warga.ROLE)) badgeRole.classList.add("badge-admin");
-            else if (["PENGURUS", "KORLAP_GANG"].includes(warga.ROLE)) badgeRole.classList.add("badge-pengurus");
+            else if (["SEKRETARIS", "BENDAHARA", "KORLAP_GANG"].includes(warga.ROLE)) badgeRole.classList.add("badge-pengurus");
             else badgeRole.classList.add("badge-warga");
             tdRole.appendChild(badgeRole);
             tr.appendChild(tdRole);
@@ -508,7 +508,7 @@
     // ==============================================================
 
     createInput("Jabatan", "jabatan", data ? data.JABATAN : "Warga");
-    createSelect("Hak Akses (Role)", "role", data ? data.ROLE : "WARGA", ["SUPER_ADMIN", "KETUA_RT", "PENGURUS", "KORLAP_GANG", "WARGA"]);
+    createSelect("Hak Akses (Role)", "role", data ? data.ROLE : "WARGA", ["SUPER_ADMIN", "KETUA_RT", "SEKRETARIS", "BENDAHARA", "KORLAP_GANG", "WARGA"]);
     createSelect("Status", "status", data ? data.STATUS : "AKTIF", ["AKTIF", "NON-AKTIF"]);
 
     const errorText = document.createElement("div");
@@ -1249,7 +1249,7 @@
             badgeRole.className = "badge";
             badgeRole.textContent = warga.ROLE;
             if (["SUPER_ADMIN", "KETUA_RT"].includes(warga.ROLE)) badgeRole.classList.add("badge-admin");
-            else if (["PENGURUS", "KORLAP_GANG"].includes(warga.ROLE)) badgeRole.classList.add("badge-pengurus");
+            else if (["SEKRETARIS", "BENDAHARA", "KORLAP_GANG"].includes(warga.ROLE)) badgeRole.classList.add("badge-pengurus");
             else badgeRole.classList.add("badge-warga");
             tdRole.appendChild(badgeRole);
             tr.appendChild(tdRole);

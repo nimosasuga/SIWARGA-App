@@ -144,15 +144,22 @@
     const menuContainer = document.createElement("nav");
     menuContainer.className = "menu-container";
 
-    // PENAMBAHAN HAK AKSES KORLAP_GANG
     const menuConfig = [
-      { id: "dashboard", title: "Dashboard Utama", icon: "dashboard", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS", "KORLAP_GANG", "WARGA"] },
-      { id: "warga", title: "Manajemen Warga", icon: "warga", roles: ["SUPER_ADMIN", "KETUA_RT", "KORLAP_GANG"] },
-      { id: "data", title: "Data Penduduk", icon: "data", roles: ["SUPER_ADMIN", "PENGURUS"] },
-      { id: "keuangan", title: "Kas & Keuangan", icon: "keuangan", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS"] },
-      { id: "iuran", title: "Iuran Saya", icon: "iuran", roles: ["KORLAP_GANG", "WARGA"] },
-      // MENU BARU DITAMBAHKAN DI SINI (Terbuka untuk semua Role)
-      { id: "profil", title: "Pengaturan Profil", icon: "profil", roles: ["SUPER_ADMIN", "KETUA_RT", "PENGURUS", "KORLAP_GANG", "WARGA"] },
+      // Terlihat oleh semua pengguna
+      { id: "dashboard", title: "Dashboard Utama", icon: "dashboard", roles: ["SUPER_ADMIN", "KETUA_RT", "SEKRETARIS", "BENDAHARA", "KORLAP_GANG", "WARGA"] },
+
+      // Administrasi Wilayah
+      { id: "warga", title: "Manajemen Warga", icon: "warga", roles: ["SUPER_ADMIN", "KETUA_RT", "SEKRETARIS", "KORLAP_GANG"] },
+      { id: "data", title: "Data Penduduk", icon: "data", roles: ["SUPER_ADMIN", "KETUA_RT", "SEKRETARIS"] },
+
+      // Manajemen Finansial (Korlap ditambahkan agar bisa memantau warganya nanti)
+      { id: "keuangan", title: "Kas & Keuangan", icon: "keuangan", roles: ["SUPER_ADMIN", "KETUA_RT", "BENDAHARA", "KORLAP_GANG"] },
+
+      // Self-Service (Semua warga dan pengurus pasti bayar iuran dan punya profil)
+      { id: "iuran", title: "Iuran Saya", icon: "iuran", roles: ["SUPER_ADMIN", "KETUA_RT", "SEKRETARIS", "BENDAHARA", "KORLAP_GANG", "WARGA"] },
+      { id: "profil", title: "Pengaturan Profil", icon: "profil", roles: ["SUPER_ADMIN", "KETUA_RT", "SEKRETARIS", "BENDAHARA", "KORLAP_GANG", "WARGA"] },
+
+      // Khusus IT
       { id: "sistem", title: "Pengaturan Sistem", icon: "sistem", roles: ["SUPER_ADMIN"] },
     ];
 

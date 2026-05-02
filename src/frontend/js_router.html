@@ -10,16 +10,17 @@
   function switchPage(pageId) {
     const pageContainer = document.getElementById("pageContainer");
     if (!pageContainer) return;
-
     pageContainer.textContent = "";
     document.querySelectorAll(".menu-item").forEach((item) => item.classList.remove("active"));
-
     const activeMenu = document.getElementById("menu-" + pageId);
     if (activeMenu) activeMenu.classList.add("active");
 
     switch (pageId) {
       case "dashboard":
         renderViewDashboard(pageContainer);
+        break;
+      case "warga": // RUTE BARU AKTIF
+        renderViewManajemenWarga(pageContainer);
         break;
       case "data":
         renderViewDataPenduduk(pageContainer);
@@ -29,7 +30,7 @@
         break;
       case "iuran":
         renderViewIuranSaya(pageContainer);
-        break; // ROUTER IURAN SAYA AKTIF
+        break;
       default:
         renderViewPlaceholder(pageContainer, "Modul Sedang Dirakit", "Modul ini sedang dalam tahap pengembangan iterasi berikutnya.");
     }
@@ -466,18 +467,28 @@
           ? google.script.run
               .withSuccessHandler(() => {
                 overlay.remove();
-                loadWargaTable(tableContainer);
+                // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+                if (tableContainer.id === "tableContainerManajemen") {
+                  loadManajemenWargaTable(tableContainer);
+                } else {
+                  loadWargaTable(tableContainer);
+                }
               })
               .withFailureHandler((err) => {
                 btnSimpan.textContent = "Simpan Data";
                 btnSimpan.disabled = false;
                 errorText.textContent = err.message;
               })
-              .createWarga(UI_STATE.user, payload) // INJEKSI KUNCI BRANKAS
+              .createWarga(UI_STATE.user, payload)
           : google.script.run
               .withSuccessHandler(() => {
                 overlay.remove();
-                loadWargaTable(tableContainer);
+                // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+                if (tableContainer.id === "tableContainerManajemen") {
+                  loadManajemenWargaTable(tableContainer);
+                } else {
+                  loadWargaTable(tableContainer);
+                }
               })
               .withFailureHandler((err) => {
                 btnSimpan.textContent = "Simpan Data";
@@ -502,13 +513,23 @@
       google.script.run
         .withSuccessHandler((msg) => {
           alert(msg);
-          loadWargaTable(tableContainer);
+          // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+          if (tableContainer.id === "tableContainerManajemen") {
+            loadManajemenWargaTable(tableContainer);
+          } else {
+            loadWargaTable(tableContainer);
+          }
         })
         .withFailureHandler((err) => {
           alert("Gagal: " + err.message);
-          loadWargaTable(tableContainer);
+          // --- DETEKSI KONTAINER UNTUK RENDER ULANG ---
+          if (tableContainer.id === "tableContainerManajemen") {
+            loadManajemenWargaTable(tableContainer);
+          } else {
+            loadWargaTable(tableContainer);
+          }
         })
-        .deleteWarga(username);
+        .deleteWarga(UI_STATE.user, username);
     }
   }
 
@@ -945,5 +966,263 @@
         container.innerHTML = `<div class="loading-text" style="color:red;">Error Akses Data: ${err.message}</div>`;
       })
       .getTransaksiByUser(UI_STATE.user, username);
+  }
+
+  /**
+   * ==========================================
+   * VIEW: MANAJEMEN WARGA (KORLAP GANG & KETUA RT)
+   * Adaptive UI & Filter Terisolasi
+   * ==========================================
+   */
+  function renderViewManajemenWarga(container) {
+    const headerDiv = document.createElement("div");
+    headerDiv.style.display = "flex";
+    headerDiv.style.justifyContent = "space-between";
+    headerDiv.style.alignItems = "center";
+    headerDiv.style.marginBottom = "1.5rem";
+
+    const title = document.createElement("h2");
+    title.textContent = "Pemetaan & Manajemen Warga";
+    title.style.color = "#0f172a";
+    headerDiv.appendChild(title);
+
+    // Kunci Otorisasi: Hanya Ketua RT dan Admin yang boleh melihat tombol Tambah
+    const isCRUDAllowed = ["SUPER_ADMIN", "KETUA_RT"].includes(UI_STATE.user.role);
+
+    const tableContainer = document.createElement("div");
+    tableContainer.id = "tableContainerManajemen"; // ID Khusus untuk pendeteksian Modal
+
+    if (isCRUDAllowed) {
+      const btnAdd = document.createElement("button");
+      btnAdd.className = "btn-primary";
+      btnAdd.textContent = "+ Tambah Warga";
+      btnAdd.onclick = () => openWargaModal("ADD", null, tableContainer);
+      headerDiv.appendChild(btnAdd);
+    }
+
+    container.appendChild(headerDiv);
+    container.appendChild(tableContainer);
+
+    loadManajemenWargaTable(tableContainer);
+  }
+
+  function loadManajemenWargaTable(container) {
+    container.innerHTML = '<div class="loading-text">Menyinkronkan data pemetaan warga...</div>';
+
+    google.script.run
+      .withSuccessHandler((dataWarga) => {
+        container.innerHTML = "";
+        const isCRUDAllowed = ["SUPER_ADMIN", "KETUA_RT"].includes(UI_STATE.user.role);
+
+        // 1. PEMETAAN OTOMATIS UNTUK KORLAP GANG
+        let baseData = dataWarga;
+        let infoMapping = "";
+
+        if (UI_STATE.user.role === "KORLAP_GANG") {
+          // Ekstrak nama gang, misal: dari "Blok A/1" menjadi "Blok A"
+          const gangPrefix = UI_STATE.user.blokRumah.split("/")[0];
+          baseData = dataWarga.filter((w) => w.BLOK_RUMAH.startsWith(gangPrefix));
+
+          infoMapping = `<div style="padding: 10px 15px; background: #eff6ff; color: #1d4ed8; border-radius: 8px; margin-bottom: 15px; font-weight: 600; font-size: 0.9rem; border-left: 4px solid #2563eb;">📍 Otoritas Terbatas: Menampilkan pemetaan khusus wilayah ${gangPrefix}</div>`;
+        }
+
+        if (infoMapping) container.innerHTML += infoMapping;
+
+        // 2. STATE PAGINASI
+        let currentPage = 1;
+        let rowsPerPage = 10;
+        let currentFilteredData = baseData;
+
+        // Ekstrak nama blok unik untuk dropdown (dari data yang sudah dipetakan)
+        const uniqueBlok = [...new Set(baseData.map((item) => item.BLOK_RUMAH.split("/")[0]))];
+
+        // 3. TOOLBAR FILTERING
+        const toolbar = document.createElement("div");
+        toolbar.className = "table-toolbar";
+        const searchInput = document.createElement("input");
+        searchInput.type = "text";
+        searchInput.className = "form-control toolbar-search";
+        searchInput.placeholder = "Cari Nama Warga...";
+
+        const filterBlok = document.createElement("select");
+        filterBlok.className = "form-control toolbar-filter";
+        filterBlok.innerHTML = `<option value="ALL">Semua Wilayah</option>` + uniqueBlok.map((b) => `<option value="${b}">${b}</option>`).join("");
+
+        toolbar.appendChild(searchInput);
+        toolbar.appendChild(filterBlok);
+        container.appendChild(toolbar);
+
+        // 4. KERANGKA TABEL
+        const wrap = document.createElement("div");
+        wrap.className = "table-container";
+        const scroll = document.createElement("div");
+        scroll.className = "table-wrapper";
+        const table = document.createElement("table");
+        table.className = "enterprise-table";
+        const thead = document.createElement("thead");
+        const trHead = document.createElement("tr");
+
+        const columns = ["USERNAME", "NAMA", "BLOK", "JABATAN", "ROLE", "STATUS"];
+        if (isCRUDAllowed) columns.push("AKSI"); // Kolom aksi hanya untuk yang berwenang
+
+        columns.forEach((t) => {
+          const th = document.createElement("th");
+          th.textContent = t;
+          trHead.appendChild(th);
+        });
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        table.appendChild(tbody);
+        scroll.appendChild(table);
+        wrap.appendChild(scroll);
+
+        // 5. KERANGKA PAGINASI
+        const paginationBar = document.createElement("div");
+        paginationBar.className = "pagination-toolbar";
+        const pageInfo = document.createElement("div");
+        const pageControls = document.createElement("div");
+        pageControls.className = "pagination-controls";
+        const limitSelect = document.createElement("select");
+        limitSelect.className = "form-control";
+        limitSelect.style.width = "auto";
+        limitSelect.style.padding = "0.3rem";
+        [10, 25, 50, 100].forEach((val) => {
+          const opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = `${val} Baris`;
+          limitSelect.appendChild(opt);
+        });
+        const btnPrev = document.createElement("button");
+        btnPrev.className = "btn-page";
+        btnPrev.textContent = "Sebelumnya";
+        const btnNext = document.createElement("button");
+        btnNext.className = "btn-page";
+        btnNext.textContent = "Selanjutnya";
+
+        pageControls.appendChild(limitSelect);
+        pageControls.appendChild(btnPrev);
+        pageControls.appendChild(btnNext);
+        paginationBar.appendChild(pageInfo);
+        paginationBar.appendChild(pageControls);
+        wrap.appendChild(paginationBar);
+        container.appendChild(wrap);
+
+        // 6. MESIN RENDER BARIS
+        function renderRows() {
+          tbody.innerHTML = "";
+          const totalRows = currentFilteredData.length;
+          const totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+          if (currentPage > totalPages) currentPage = totalPages;
+          if (currentPage < 1) currentPage = 1;
+          const startIndex = (currentPage - 1) * rowsPerPage;
+          const endIndex = startIndex + rowsPerPage;
+          const pageData = currentFilteredData.slice(startIndex, endIndex);
+
+          pageInfo.innerHTML = `Menampilkan <strong>${totalRows === 0 ? 0 : startIndex + 1} - ${Math.min(endIndex, totalRows)}</strong> dari <strong>${totalRows}</strong> warga`;
+          btnPrev.disabled = currentPage === 1;
+          btnNext.disabled = currentPage === totalPages || totalRows === 0;
+
+          if (totalRows === 0) {
+            tbody.innerHTML = `<tr><td colspan="${columns.length}" style="text-align:center; padding: 2rem; color: #64748b;">Data pemetaan kosong.</td></tr>`;
+            return;
+          }
+
+          pageData.forEach((warga) => {
+            const tr = document.createElement("tr");
+
+            const tdUser = document.createElement("td");
+            tdUser.textContent = warga.USERNAME;
+            tdUser.style.color = "#64748b";
+            tr.appendChild(tdUser);
+
+            const tdNama = document.createElement("td");
+            // Mengatasi perbedaan key NAMA_LENGKAP vs NAMA
+            tdNama.textContent = warga.NAMA_LENGKAP || warga.NAMA;
+            tdNama.style.fontWeight = "700";
+            tr.appendChild(tdNama);
+
+            const tdBlok = document.createElement("td");
+            tdBlok.textContent = warga.BLOK_RUMAH;
+            tr.appendChild(tdBlok);
+
+            const tdJabatan = document.createElement("td");
+            tdJabatan.textContent = warga.JABATAN;
+            tr.appendChild(tdJabatan);
+
+            const tdRole = document.createElement("td");
+            const badgeRole = document.createElement("span");
+            badgeRole.className = "badge";
+            badgeRole.textContent = warga.ROLE;
+            if (["SUPER_ADMIN", "KETUA_RT"].includes(warga.ROLE)) badgeRole.classList.add("badge-admin");
+            else if (["PENGURUS", "KORLAP_GANG"].includes(warga.ROLE)) badgeRole.classList.add("badge-pengurus");
+            else badgeRole.classList.add("badge-warga");
+            tdRole.appendChild(badgeRole);
+            tr.appendChild(tdRole);
+
+            const tdStatus = document.createElement("td");
+            const badgeStatus = document.createElement("span");
+            badgeStatus.className = warga.STATUS === "AKTIF" ? "badge badge-aktif" : "badge badge-admin";
+            badgeStatus.textContent = warga.STATUS;
+            tdStatus.appendChild(badgeStatus);
+            tr.appendChild(tdStatus);
+
+            if (isCRUDAllowed) {
+              const tdAksi = document.createElement("td");
+              const btnEdit = document.createElement("button");
+              btnEdit.className = "btn-edit";
+              btnEdit.textContent = "Edit";
+              btnEdit.onclick = () => openWargaModal("EDIT", warga, container);
+              const btnDel = document.createElement("button");
+              btnDel.className = "btn-danger";
+              btnDel.textContent = "Hapus";
+              btnDel.onclick = () => confirmDeleteWarga(warga.USERNAME, warga.NAMA_LENGKAP || warga.NAMA, container);
+              tdAksi.appendChild(btnEdit);
+              tdAksi.appendChild(btnDel);
+              tr.appendChild(tdAksi);
+            }
+            tbody.appendChild(tr);
+          });
+        }
+
+        btnPrev.addEventListener("click", () => {
+          if (currentPage > 1) {
+            currentPage--;
+            renderRows();
+          }
+        });
+        btnNext.addEventListener("click", () => {
+          const maxPage = Math.ceil(currentFilteredData.length / rowsPerPage);
+          if (currentPage < maxPage) {
+            currentPage++;
+            renderRows();
+          }
+        });
+        limitSelect.addEventListener("change", (e) => {
+          rowsPerPage = parseInt(e.target.value);
+          currentPage = 1;
+          renderRows();
+        });
+
+        function applyFilters() {
+          const keyword = searchInput.value.toLowerCase();
+          const selBlok = filterBlok.value;
+          currentFilteredData = baseData.filter((w) => {
+            const textMatch = (w.NAMA_LENGKAP || w.NAMA).toLowerCase().includes(keyword) || w.USERNAME.toLowerCase().includes(keyword);
+            const blokMatch = selBlok === "ALL" || w.BLOK_RUMAH.startsWith(selBlok);
+            return textMatch && blokMatch;
+          });
+          currentPage = 1;
+          renderRows();
+        }
+
+        searchInput.addEventListener("input", applyFilters);
+        filterBlok.addEventListener("change", applyFilters);
+        renderRows();
+      })
+      .withFailureHandler((err) => {
+        container.innerHTML = `<div class="loading-text" style="color:red;">Error Akses: ${err.message}</div>`;
+      })
+      .getAllWarga(UI_STATE.user);
   }
 </script>

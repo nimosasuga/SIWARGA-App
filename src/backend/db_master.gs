@@ -124,3 +124,56 @@ function deleteWarga(adminProfile, username) {
   if (successCount === 0) throw new Error("Penghapusan gagal: Data tidak ditemukan.");
   return "Data penduduk berhasil dihapus permanen dari sistem.";
 }
+
+/**
+ * [UPDATE] Fitur Self-Service Khusus Pengguna
+ * Hanya mengizinkan pergantian Username & Password
+ */
+function updateMyCredentials(userProfile, newUsername, newPassword) {
+  if (!userProfile || !userProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
+
+  const oldUsername = userProfile.username;
+  const targetUsername = newUsername.trim() || oldUsername;
+
+  const masterSS = SpreadsheetApp.openById(MASTER_ID_AUTH);
+  const sheetAuth = masterSS.getSheetByName("DATA_WARGA");
+  const authData = sheetAuth.getDataRange().getValues();
+
+  // 1. Validasi Zero-Collision (Cek bentrok jika ganti username)
+  if (targetUsername !== oldUsername) {
+    const isExist = authData.some((row) => row[0].toString().trim() === targetUsername);
+    if (isExist) throw new Error("Username sudah digunakan di sistem. Silakan pilih username lain.");
+  }
+
+  let successCount = 0;
+  let finalPassword = "";
+
+  // 2. Update Auth DB (Kredensial Master)
+  for (let i = 1; i < authData.length; i++) {
+    if (authData[i][0].toString() === oldUsername) {
+      // Jika password kosong, pertahankan password lama
+      finalPassword = newPassword ? newPassword.trim() : authData[i][1].toString();
+      // Update Kolom USERNAME dan PASSWORD (Kolom A & B / Index 1 & 2)
+      sheetAuth.getRange(i + 1, 1, 1, 2).setValues([[targetUsername, finalPassword]]);
+      successCount++;
+      break;
+    }
+  }
+
+  // 3. Update Profil DB (Brankas Tenant)
+  const tenantSS = SpreadsheetApp.openById(userProfile.tenant_db_id);
+  const sheetPenduduk = tenantSS.getSheetByName("DATA_PENDUDUK");
+  const pData = sheetPenduduk.getDataRange().getValues();
+
+  for (let j = 1; j < pData.length; j++) {
+    if (pData[j][0].toString() === oldUsername) {
+      // Hanya menimpa sel USERNAME di Kolom A
+      sheetPenduduk.getRange(j + 1, 1).setValue(targetUsername);
+      successCount++;
+      break;
+    }
+  }
+
+  if (successCount < 2) throw new Error("Pembaruan gagal: Sinkronisasi antar database terputus.");
+  return "Kredensial berhasil diperbarui. Perubahan otomatis aktif!";
+}

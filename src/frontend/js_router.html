@@ -31,6 +31,9 @@
       case "iuran":
         renderViewIuranSaya(pageContainer);
         break;
+      case "profil": // RUTE BARU DIDAFTARKAN
+        renderViewProfil(pageContainer);
+        break;
       default:
         renderViewPlaceholder(pageContainer, "Modul Sedang Dirakit", "Modul ini sedang dalam tahap pengembangan iterasi berikutnya.");
     }
@@ -365,14 +368,18 @@
   function openWargaModal(mode, data = null, tableContainer) {
     const oldModal = document.getElementById("crudModal");
     if (oldModal) oldModal.remove();
+
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
     overlay.id = "crudModal";
+
     const box = document.createElement("div");
     box.className = "modal-box";
+
     const header = document.createElement("div");
     header.className = "modal-header";
     header.textContent = mode === "ADD" ? "Form Tambah Penduduk" : "Edit Data Penduduk";
+
     const btnClose = document.createElement("button");
     btnClose.innerHTML = "&times;";
     btnClose.style.background = "none";
@@ -381,6 +388,7 @@
     btnClose.style.cursor = "pointer";
     btnClose.onclick = () => overlay.remove();
     header.appendChild(btnClose);
+
     const body = document.createElement("div");
     body.className = "modal-body";
 
@@ -402,6 +410,7 @@
       grp.appendChild(inp);
       body.appendChild(grp);
     }
+
     function createSelect(labelTxt, id, val, optionsArr) {
       const grp = document.createElement("div");
       grp.className = "form-group";
@@ -423,9 +432,81 @@
     }
 
     createInput("Username (Unik)", "username", data ? data.USERNAME : "", "text", mode === "EDIT");
-    createInput("Nama Lengkap", "nama", data ? data.NAMA : "");
+    createInput("Nama Lengkap", "nama", data ? data.NAMA_LENGKAP || data.NAMA : "");
     createInput("Password", "password", data ? data.PASSWORD : "warga123");
-    createInput("Nomor / Blok Rumah", "blok", data ? data.BLOK_RUMAH : "");
+
+    // ==============================================================
+    // [UI/UX ENTERPRISE] CUSTOM FIELD: GANG & NOMOR (ANTI-ERROR)
+    // ==============================================================
+    let defaultGang = "";
+    let defaultNo = "";
+    if (data && data.BLOK_RUMAH) {
+      const parts = data.BLOK_RUMAH.split("/");
+      defaultGang = parts[0] || "";
+      defaultNo = parts[1] || "";
+    }
+
+    // Ekstraksi (Scraping) Nama Gang yang sudah ada langsung dari Tabel DOM (Zero-Latency)
+    const uniqueGangs = new Set();
+    const tbodyRows = tableContainer.querySelectorAll("tbody tr");
+    tbodyRows.forEach((tr) => {
+      const blokCell = tr.children[2]; // Kolom BLOK selalu ada di indeks ke-2
+      if (blokCell && blokCell.textContent.includes("/")) {
+        uniqueGangs.add(blokCell.textContent.split("/")[0].trim());
+      }
+    });
+
+    const grpBlok = document.createElement("div");
+    grpBlok.className = "form-group";
+    const lblBlok = document.createElement("label");
+    lblBlok.textContent = "Alamat Warga (Ketik/Pilih Gang dan Nomor)";
+    grpBlok.appendChild(lblBlok);
+
+    // Mesin Datalist (EnumList Dinamis yang mengizinkan input manual)
+    const datalistId = "gang-suggestions";
+    const datalist = document.createElement("datalist");
+    datalist.id = datalistId;
+    uniqueGangs.forEach((g) => {
+      const opt = document.createElement("option");
+      opt.value = g;
+      datalist.appendChild(opt);
+    });
+    grpBlok.appendChild(datalist);
+
+    const flexDiv = document.createElement("div");
+    flexDiv.style.display = "flex";
+    flexDiv.style.alignItems = "center";
+    flexDiv.style.gap = "10px";
+
+    const inpGang = document.createElement("input");
+    inpGang.className = "form-control";
+    inpGang.style.flex = "2";
+    inpGang.type = "text";
+    inpGang.id = "mod_gang";
+    inpGang.placeholder = "Pilih / Ketik Gang";
+    inpGang.value = defaultGang;
+    inpGang.setAttribute("list", datalistId); // Pasangkan input dengan datalist
+
+    const sep = document.createElement("span");
+    sep.textContent = "/";
+    sep.style.fontWeight = "bold";
+    sep.style.color = "#64748b";
+
+    const inpNo = document.createElement("input");
+    inpNo.className = "form-control";
+    inpNo.style.flex = "1";
+    inpNo.type = "text";
+    inpNo.id = "mod_no";
+    inpNo.placeholder = "No. Rumah";
+    inpNo.value = defaultNo;
+
+    flexDiv.appendChild(inpGang);
+    flexDiv.appendChild(sep);
+    flexDiv.appendChild(inpNo);
+    grpBlok.appendChild(flexDiv);
+    body.appendChild(grpBlok);
+    // ==============================================================
+
     createInput("Jabatan", "jabatan", data ? data.JABATAN : "Warga");
     createSelect("Hak Akses (Role)", "role", data ? data.ROLE : "WARGA", ["SUPER_ADMIN", "KETUA_RT", "PENGURUS", "KORLAP_GANG", "WARGA"]);
     createSelect("Status", "status", data ? data.STATUS : "AKTIF", ["AKTIF", "NON-AKTIF"]);
@@ -435,39 +516,52 @@
     errorText.style.fontSize = "0.85rem";
     errorText.style.marginTop = "10px";
     body.appendChild(errorText);
+
     const footer = document.createElement("div");
     footer.className = "modal-footer";
+
     const btnBatal = document.createElement("button");
     btnBatal.className = "btn-secondary";
     btnBatal.textContent = "Batal";
     btnBatal.onclick = () => overlay.remove();
+
     const btnSimpan = document.createElement("button");
     btnSimpan.className = "btn-primary";
     btnSimpan.textContent = "Simpan Data";
-
     btnSimpan.onclick = () => {
+      // Penyatuan otomatis dari dua input terpisah
+      const gangVal = document.getElementById("mod_gang").value.trim();
+      const noVal = document.getElementById("mod_no").value.trim();
+
       const payload = {
         USERNAME: document.getElementById("mod_username").value.trim(),
-        NAMA: document.getElementById("mod_nama").value.trim(),
+        NAMA_LENGKAP: document.getElementById("mod_nama").value.trim(),
         PASSWORD: document.getElementById("mod_password").value.trim(),
-        BLOK_RUMAH: document.getElementById("mod_blok").value.trim(),
+        BLOK_RUMAH: gangVal && noVal ? `${gangVal}/${noVal}` : "", // Konversi ke format baku "Gang/No"
         JABATAN: document.getElementById("mod_jabatan").value.trim(),
         ROLE: document.getElementById("mod_role").value,
         STATUS: document.getElementById("mod_status").value,
       };
-      if (!payload.USERNAME || !payload.NAMA) {
+
+      if (!payload.USERNAME || !payload.NAMA_LENGKAP) {
         errorText.textContent = "Username dan Nama wajib diisi.";
         return;
       }
+      if (!gangVal || !noVal) {
+        errorText.textContent = "Gang/Blok dan Nomor Rumah wajib diisi dengan lengkap.";
+        return;
+      }
+
       btnSimpan.textContent = "Menyimpan...";
       btnSimpan.disabled = true;
       errorText.textContent = "";
+
       const action =
         mode === "ADD"
           ? google.script.run
               .withSuccessHandler((msg) => {
                 overlay.remove();
-                showToast(msg || "Data berhasil ditambahkan", "success"); // Menggunakan Toast
+                showToast(msg || "Data berhasil ditambahkan", "success");
                 if (tableContainer.id === "tableContainerManajemen") {
                   loadManajemenWargaTable(tableContainer);
                 } else {
@@ -483,7 +577,7 @@
           : google.script.run
               .withSuccessHandler((msg) => {
                 overlay.remove();
-                showToast(msg || "Data berhasil diperbarui", "success"); // Menggunakan Toast
+                showToast(msg || "Data berhasil diperbarui", "success");
                 if (tableContainer.id === "tableContainerManajemen") {
                   loadManajemenWargaTable(tableContainer);
                 } else {
@@ -497,6 +591,7 @@
               })
               .updateWarga(UI_STATE.user, data.USERNAME, payload);
     };
+
     footer.appendChild(btnBatal);
     footer.appendChild(btnSimpan);
     box.appendChild(header);
@@ -1223,5 +1318,132 @@
         container.innerHTML = `<div class="loading-text" style="color:red;">Error Akses: ${err.message}</div>`;
       })
       .getAllWarga(UI_STATE.user);
+  }
+
+  /**
+   * ==========================================
+   * VIEW: PENGATURAN PROFIL (SELF-SERVICE)
+   * ==========================================
+   */
+  function renderViewProfil(container) {
+    const headerDiv = document.createElement("div");
+    headerDiv.style.marginBottom = "1.5rem";
+
+    const title = document.createElement("h2");
+    title.textContent = "Pengaturan Profil Saya";
+    title.style.color = "#0f172a";
+
+    const subtitle = document.createElement("p");
+    subtitle.textContent = "Kelola kredensial login dan informasi akun Anda.";
+    subtitle.style.color = "#64748b";
+
+    headerDiv.appendChild(title);
+    headerDiv.appendChild(subtitle);
+    container.appendChild(headerDiv);
+
+    // Kartu Formulir
+    const card = document.createElement("div");
+    card.style.background = "#ffffff";
+    card.style.padding = "2rem";
+    card.style.borderRadius = "12px";
+    card.style.border = "1px solid #e2e8f0";
+    card.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.05)";
+    card.style.maxWidth = "500px";
+
+    // Helper Pembuat Field
+    function createField(labelTxt, id, value, isReadonly, type = "text") {
+      const grp = document.createElement("div");
+      grp.className = "form-group";
+      grp.style.marginBottom = "1.25rem";
+
+      const lbl = document.createElement("label");
+      lbl.textContent = labelTxt;
+      lbl.style.display = "block";
+      lbl.style.marginBottom = "0.5rem";
+      lbl.style.fontWeight = "600";
+      lbl.style.color = "#475569";
+      lbl.style.fontSize = "0.85rem";
+
+      const inp = document.createElement("input");
+      inp.className = "form-control";
+      inp.type = type;
+      inp.id = id;
+      inp.value = value;
+
+      if (isReadonly) {
+        inp.readOnly = true;
+        inp.style.backgroundColor = "#f8fafc";
+        inp.style.color = "#94a3b8";
+        inp.style.borderColor = "#e2e8f0";
+      }
+
+      grp.appendChild(lbl);
+      grp.appendChild(inp);
+      return grp;
+    }
+
+    // Bagian Read-Only (Dikunci)
+    card.appendChild(createField("Nama Lengkap", "prof_nama", UI_STATE.user.nama, true));
+    card.appendChild(createField("Blok / No. Rumah", "prof_blok", UI_STATE.user.blokRumah, true));
+    card.appendChild(createField("Otoritas / Hak Akses", "prof_role", UI_STATE.user.role, true));
+
+    // Garis Pemisah
+    const hr = document.createElement("hr");
+    hr.style.margin = "1.5rem 0";
+    hr.style.border = "none";
+    hr.style.borderTop = "1px solid #e2e8f0";
+    card.appendChild(hr);
+
+    // Bagian Kredensial (Bisa Diedit)
+    const alertBox = document.createElement("div");
+    alertBox.style.padding = "10px 15px";
+    alertBox.style.background = "#eff6ff";
+    alertBox.style.color = "#1d4ed8";
+    alertBox.style.borderRadius = "8px";
+    alertBox.style.fontSize = "0.85rem";
+    alertBox.style.marginBottom = "1.5rem";
+    alertBox.innerHTML = "<strong>Keamanan Akun:</strong> Anda bebas mengubah Username login Anda. Kosongkan kolom Password jika tidak ingin mengubahnya.";
+    card.appendChild(alertBox);
+
+    card.appendChild(createField("Username Login (Unik)", "prof_user", UI_STATE.user.username, false));
+    card.appendChild(createField("Password Baru", "prof_pass", "", false, "password"));
+
+    const btnSave = document.createElement("button");
+    btnSave.className = "btn-primary";
+    btnSave.textContent = "Simpan Kredensial";
+    btnSave.style.width = "100%";
+    btnSave.style.padding = "0.8rem";
+    btnSave.style.marginTop = "0.5rem";
+
+    btnSave.onclick = () => {
+      const newU = document.getElementById("prof_user").value.trim();
+      const newP = document.getElementById("prof_pass").value.trim();
+
+      if (!newU) {
+        showToast("Kolom Username tidak boleh kosong!", "error");
+        return;
+      }
+
+      btnSave.textContent = "Memproses...";
+      btnSave.disabled = true;
+
+      google.script.run
+        .withSuccessHandler((msg) => {
+          showToast(msg, "success");
+          btnSave.textContent = "Simpan Kredensial";
+          btnSave.disabled = false;
+          // Perbarui sesi state UI secara diam-diam agar user tidak perlu relogin!
+          UI_STATE.user.username = newU;
+        })
+        .withFailureHandler((err) => {
+          showToast(err.message, "error");
+          btnSave.textContent = "Simpan Kredensial";
+          btnSave.disabled = false;
+        })
+        .updateMyCredentials(UI_STATE.user, newU, newP);
+    };
+
+    card.appendChild(btnSave);
+    container.appendChild(card);
   }
 </script>

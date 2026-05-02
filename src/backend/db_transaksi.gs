@@ -10,42 +10,38 @@
 
 /**
  * [READ] Mengambil riwayat transaksi (Dengan Data Hydration NAMA & BLOK)
- * Dilengkapi dengan filter terisolasi untuk KORLAP_GANG
+ * Dilengkapi dengan paksaan baca kolom gaib (STATUS & BUKTI_URL)
  */
 function getAllTransaksi(userProfile) {
   if (!userProfile || !userProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
 
   const db = SpreadsheetApp.openById(userProfile.tenant_db_id);
-
-  // 1. Ambil Data Transaksi
   const sheetLog = db.getSheetByName("LOG_IURAN");
   if (!sheetLog) throw new Error("CRITICAL: Sheet LOG_IURAN tidak ditemukan di DB Tenant Anda.");
+
   const rawLog = sheetLog.getDataRange().getValues();
+  if (rawLog.length <= 1) return []; // Jika kosong, kembalikan array kosong
+
   const headersLog = rawLog[0];
   const rowsLog = rawLog.slice(1);
 
-  // 2. Ambil Data Penduduk untuk Hydration (Lookup/Pencocokan)
   const sheetPenduduk = db.getSheetByName("DATA_PENDUDUK");
   const rowsPenduduk = sheetPenduduk.getDataRange().getValues().slice(1);
 
-  // Buat Kamus/Katalog Warga berdasarkan USERNAME
   let kamusWarga = {};
   rowsPenduduk.forEach((row) => {
-    // Index 0: USERNAME, Index 1: NAMA, Index 3: BLOK
-    kamusWarga[row[0].toString().trim()] = {
-      nama: row[1],
-      blok: row[3],
-    };
+    kamusWarga[row[0].toString().trim()] = { nama: row[1], blok: row[3] };
   });
 
   const bulanIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-  // 3. Merakit Data Lengkap (Suntik Nama & Blok ke Transaksi)
   let allData = rowsLog.map((row) => {
     let obj = {};
     headersLog.forEach((header, index) => {
       let cellValue = row[index];
-      let headerName = header.toString().trim();
+      // Jika header kosong, beri nama sementara agar tidak error
+      let headerName = header.toString().trim() || `KOLOM_GAIB_${index}`;
+
       if (Object.prototype.toString.call(cellValue) === "[object Date]") {
         if (headerName === "BULAN_DIBAYAR") {
           obj[headerName] = `${bulanIndo[cellValue.getMonth()]} ${cellValue.getFullYear()}`;
@@ -57,7 +53,12 @@ function getAllTransaksi(userProfile) {
       }
     });
 
-    // Inject Nama dan Blok dari Kamus
+    // ==============================================================
+    // [HARDCODE INJECTION] MEMAKSA BACA KOLOM 6 (STATUS) & 7 (BUKTI)
+    // ==============================================================
+    obj["STATUS"] = row[6] ? row[6].toString().trim() : "LUNAS";
+    obj["BUKTI_URL"] = row[7] ? row[7].toString().trim() : "-";
+
     let usernameTrx = obj["USERNAME"] ? obj["USERNAME"].toString().trim() : "";
     obj["NAMA_WARGA"] = kamusWarga[usernameTrx] ? kamusWarga[usernameTrx].nama : "Data Dihapus";
     obj["BLOK_RUMAH"] = kamusWarga[usernameTrx] ? kamusWarga[usernameTrx].blok : "-";
@@ -65,13 +66,11 @@ function getAllTransaksi(userProfile) {
     return obj;
   });
 
-  // 4. Zero-Trust Security: Jika Korlap Gang, potong data khusus prefix wilayahnya
   if (userProfile.role === "KORLAP_GANG") {
     const gangPrefix = userProfile.blokRumah.split("/")[0];
     allData = allData.filter((trx) => trx["BLOK_RUMAH"].startsWith(gangPrefix));
   }
 
-  // Urutkan dari yang terbaru ke terlama
   allData.sort((a, b) => new Date(b.TIMESTAMP) - new Date(a.TIMESTAMP));
   return allData;
 }

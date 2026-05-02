@@ -993,4 +993,28 @@ horizontal tidak sengaja */
     /* Bayangan halus di bawah header saat tabel di-scroll (UI/UX Enterprise) */
     box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
   }
+
+  /* =========================================
+       FITUR: STICKY HEADER MENU UTAMA
+       ========================================= */
+  .header,
+  .main-header,
+  #header,
+  header {
+    position: -webkit-sticky !important; /* Dukungan browser Safari/iOS */
+    position: sticky !important;
+    top: 0 !important;
+
+    /* Z-index 999 memastikan header utama menutupi elemen tabel (z-index 10) saat di-scroll */
+    z-index: 999 !important;
+
+    /* Wajib menggunakan background solid agar konten yang lewat di bawahnya tidak bertumpuk/terbaca */
+    background-color: #ffffff !important;
+
+    /* Efek bayangan premium untuk memisahkan header dari area konten */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+
+    /* Memastikan lebar selalu penuh */
+    width: 100% !important;
+  }
 </style>

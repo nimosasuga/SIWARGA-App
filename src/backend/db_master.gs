@@ -1,19 +1,21 @@
+// File: src/backend/db_master.gs
+// [LOCATOR: Ganti seluruh isi file db_master.gs dengan blok ini]
+
 /**
  * ==========================================
- * S.I.W.A.R.G.A - DB MASTER OPERATIONS
- * Menangani logika CRUD untuk Data Penduduk
+ * S.I.W.A.R.G.A - DB MASTER & TENANT OPERATIONS (V3)
+ * Menangani logika CRUD Dual-Write (Split Auth & Profile)
  * ==========================================
  */
+const MASTER_ID_AUTH = "1BIXJOrqtfpe2RvX9xDNiXJbl4EImfHUehF71uZeCuU8";
 
-function _getSheetWarga() {
-  const MASTER_ID = "1Ko4hiHR39_vCHYXKub6FIvjcEDhHZc1UGpoOqD0AUns";
-  return SpreadsheetApp.openById(MASTER_ID).getSheetByName("DATA_WARGA");
-}
+/** [READ] Mengambil profil penduduk khusus di RT admin yang sedang login */
+function getAllWarga(adminProfile) {
+  if (!adminProfile || !adminProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid atau terputus.");
 
-/** [READ] Mengambil data */
-function getAllWarga() {
-  const sheet = _getSheetWarga();
-  if (!sheet) throw new Error("Sheet DATA_WARGA tidak ditemukan.");
+  const tenantSS = SpreadsheetApp.openById(adminProfile.tenant_db_id);
+  const sheet = tenantSS.getSheetByName("DATA_PENDUDUK");
+  if (!sheet) throw new Error("Sheet DATA_PENDUDUK tidak ditemukan di Brankas Data RT Anda.");
 
   const rawData = sheet.getDataRange().getValues();
   const headers = rawData[0];
@@ -28,51 +30,97 @@ function getAllWarga() {
   });
 }
 
-/** [CREATE] Menambah warga baru */
-function createWarga(data) {
-  const sheet = _getSheetWarga();
-  const rawData = sheet.getDataRange().getValues();
+/** [CREATE] Dual-Write: Menambah warga ke Master Auth & Tenant Profile */
+function createWarga(adminProfile, data) {
+  if (!adminProfile || !adminProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
 
-  // Validasi Username Unik
-  const isExist = rawData.some((row) => row[0].toString().trim() === data.USERNAME.trim());
-  if (isExist) throw new Error("Username sudah digunakan, silakan gunakan username lain.");
+  const masterSS = SpreadsheetApp.openById(MASTER_ID_AUTH);
+  const sheetAuth = masterSS.getSheetByName("DATA_WARGA");
+  const authData = sheetAuth.getDataRange().getValues();
 
-  // Urutan Kolom: [USERNAME, NAMA, PASSWORD, BLOK_RUMAH, JABATAN, ROLE, STATUS]
-  const newRow = [data.USERNAME, data.NAMA, data.PASSWORD, data.BLOK_RUMAH, data.JABATAN, data.ROLE, data.STATUS];
-  sheet.appendRow(newRow);
-  return "Data penduduk berhasil ditambahkan.";
+  // 1. Validasi Zero-Collision (Username harus unik secara global)
+  const isExist = authData.some((row) => row[0].toString().trim() === data.USERNAME.trim());
+  if (isExist) throw new Error("Username sudah digunakan di sistem. Silakan gunakan username lain.");
+
+  // 2. Tulis Kredensial ke Master DB (Auth Hub)
+  // Struktur: [USERNAME, PASSWORD, ROLE, KODE_KAWASAN, KODE_RT, KODE_RW, DB_TRANSAKSI_ID]
+  sheetAuth.appendRow([data.USERNAME, data.PASSWORD, data.ROLE, adminProfile.kode_kawasan, adminProfile.kode_rt, adminProfile.kode_rw, adminProfile.tenant_db_id]);
+
+  // 3. Tulis Profil Lengkap ke Tenant DB (Brankas Data)
+  // Struktur: [USERNAME, NAMA_LENGKAP, NIK, BLOK_RUMAH, NO_HP, JABATAN, STATUS]
+  const tenantSS = SpreadsheetApp.openById(adminProfile.tenant_db_id);
+  const sheetPenduduk = tenantSS.getSheetByName("DATA_PENDUDUK");
+  sheetPenduduk.appendRow([data.USERNAME, data.NAMA_LENGKAP, data.NIK, data.BLOK_RUMAH, data.NO_HP, data.JABATAN, data.STATUS]);
+
+  return "Data penduduk berhasil ditambahkan dan diamankan di brankas terisolasi.";
 }
 
-/** [UPDATE] Memperbarui warga yang ada */
-function updateWarga(username, data) {
-  const sheet = _getSheetWarga();
-  const rawData = sheet.getDataRange().getValues();
-  const headers = rawData[0];
+/** [UPDATE] Dual-Update: Memperbarui data warga di Master & Tenant */
+function updateWarga(adminProfile, username, data) {
+  if (!adminProfile || !adminProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
 
-  for (let i = 1; i < rawData.length; i++) {
-    if (rawData[i][0].toString() === username.toString()) {
-      const rowNumber = i + 1; // Index array + 1 karena array mulai dari 0
-      const updatedRow = [data.USERNAME, data.NAMA, data.PASSWORD, data.BLOK_RUMAH, data.JABATAN, data.ROLE, data.STATUS];
-      // Timpa baris secara absolut
-      sheet.getRange(rowNumber, 1, 1, headers.length).setValues([updatedRow]);
-      return "Data penduduk berhasil diperbarui.";
+  let successCount = 0;
+
+  // 1. Update Kredensial di Master DB
+  const sheetAuth = SpreadsheetApp.openById(MASTER_ID_AUTH).getSheetByName("DATA_WARGA");
+  const authData = sheetAuth.getDataRange().getValues();
+  for (let i = 1; i < authData.length; i++) {
+    if (authData[i][0].toString() === username.toString()) {
+      // Update Password dan Role (Kolom B dan C)
+      sheetAuth.getRange(i + 1, 2, 1, 2).setValues([[data.PASSWORD, data.ROLE]]);
+      successCount++;
+      break;
     }
   }
-  throw new Error("Pembaruan gagal: Data tidak ditemukan di database.");
+
+  // 2. Update Profil di Tenant DB
+  const sheetPenduduk = SpreadsheetApp.openById(adminProfile.tenant_db_id).getSheetByName("DATA_PENDUDUK");
+  const pData = sheetPenduduk.getDataRange().getValues();
+  for (let j = 1; j < pData.length; j++) {
+    if (pData[j][0].toString() === username.toString()) {
+      const updatedRow = [data.USERNAME, data.NAMA_LENGKAP, data.NIK, data.BLOK_RUMAH, data.NO_HP, data.JABATAN, data.STATUS];
+      sheetPenduduk.getRange(j + 1, 1, 1, updatedRow.length).setValues([updatedRow]);
+      successCount++;
+      break;
+    }
+  }
+
+  if (successCount === 0) throw new Error("Pembaruan gagal: Data tidak ditemukan.");
+  return "Data penduduk berhasil diperbarui di seluruh ekosistem.";
 }
 
-/** [DELETE] Menghapus data warga */
-function deleteWarga(username) {
-  const sheet = _getSheetWarga();
-  const rawData = sheet.getDataRange().getValues();
+/** [DELETE] Dual-Delete: Menghapus data warga dari Master & Tenant */
+function deleteWarga(adminProfile, username) {
+  if (!adminProfile || !adminProfile.tenant_db_id) throw new Error("Akses Ditolak: Sesi tidak valid.");
 
-  for (let i = 1; i < rawData.length; i++) {
-    if (rawData[i][0].toString() === username.toString()) {
-      if (rawData[i][5] === "SUPER_ADMIN") throw new Error("Sistem menolak! Super Admin tidak bisa dihapus.");
+  // Proteksi Bunuh Diri (Mencegah admin menghapus dirinya sendiri)
+  if (adminProfile.username === username) throw new Error("Sistem menolak! Anda tidak dapat menghapus akun Anda sendiri.");
 
-      sheet.deleteRow(i + 1);
-      return "Data penduduk berhasil dihapus permanen.";
+  let successCount = 0;
+
+  // 1. Hapus Kredensial dari Master DB
+  const sheetAuth = SpreadsheetApp.openById(MASTER_ID_AUTH).getSheetByName("DATA_WARGA");
+  const authData = sheetAuth.getDataRange().getValues();
+  for (let i = 1; i < authData.length; i++) {
+    if (authData[i][0].toString() === username.toString()) {
+      if (authData[i][2] === "SUPER_ADMIN") throw new Error("Sistem menolak! Super Admin tidak bisa dihapus.");
+      sheetAuth.deleteRow(i + 1);
+      successCount++;
+      break;
     }
   }
-  throw new Error("Penghapusan gagal: Data tidak ditemukan.");
+
+  // 2. Hapus Profil dari Tenant DB
+  const sheetPenduduk = SpreadsheetApp.openById(adminProfile.tenant_db_id).getSheetByName("DATA_PENDUDUK");
+  const pData = sheetPenduduk.getDataRange().getValues();
+  for (let j = 1; j < pData.length; j++) {
+    if (pData[j][0].toString() === username.toString()) {
+      sheetPenduduk.deleteRow(j + 1);
+      successCount++;
+      break;
+    }
+  }
+
+  if (successCount === 0) throw new Error("Penghapusan gagal: Data tidak ditemukan.");
+  return "Data penduduk berhasil dihapus permanen dari sistem.";
 }
